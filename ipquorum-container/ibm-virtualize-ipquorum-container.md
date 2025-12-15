@@ -83,7 +83,8 @@ Make sure you have these before starting:
 
 5.  Change the owner of the directory to the user we created,
     In this case ipquorum.
-    chown ipquorum /srv/ipquorum/logs
+
+    `chown ipquorum /srv/ipquorum/logs`
 
 
 6. You can Copy in the ip_quorum.jar file from the Spectrum Virtualize box with SCP.

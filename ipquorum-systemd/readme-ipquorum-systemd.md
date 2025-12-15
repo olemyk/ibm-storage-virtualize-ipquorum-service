@@ -21,7 +21,9 @@ The application determines which nodes or enclosures can continue processing hos
 
 These have different requirements anf functions, these are listed below.
 Please check Storage Virtualize IBM Doc for updated requirements.
-https://www.ibm.com/docs/en/flashsystem-7x00/8.6.x?topic=cq-ip-quorum-application-configuration
+
+https://www.ibm.com/docs/en/flashsystem-7x00/9.1.0?topic=quorum-ip-application
+https://www.ibm.com/support/pages/node/7013877
 
 **Tie-break (nometadata)**
 
@@ -107,12 +109,14 @@ For more information about IP-Quorum Application and config check IBM Doc
     Using SCP to copy the ip_quorum.jar from Spectrum Virtualize to ip-quorum host
         
         scp superuser@specv-ip:/dumps/ip_quorum.jar /opt/IBM/ip-quorum
+    **RestAPI**
+    * [Guides for Downloading the IPQuorum with Script trough RestAPI](ipquorum-download/ipquorum-download-script-readme.md)
 
 6. **Install JAVA**
 
     The supported java version is listed here. Supported Java and OS
     easiest way is just to install openjdk with yum install. Example:
-    yum install java
+    dnf install java
 
 7. **Verify Java**
     
@@ -139,7 +143,7 @@ For more information about IP-Quorum Application and config check IBM Doc
     ```       
     [Unit]
     Description=IBM IP Quorum
-    Documentation=https://www.ibm.com/docs/en/flashsystem-7x00/8.6.x?topic=cq-ip-quorum-application-configuration
+    Documentation=https://www.ibm.com/docs/en/flashsystem-7x00/9.1.0?topic=quorum-ip-application
     After=local-fs.target network-online.target
 
     [Service]
