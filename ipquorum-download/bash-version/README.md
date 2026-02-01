@@ -24,11 +24,21 @@ A bash utility to **download the IBM Virtualize IPQuorum JAR** via REST API and 
 ---
 
 ## Overview
-This script interacts with the IBM Storage Virtualize REST API to:
+This bash script interacts with the IBM Storage Virtualize REST API to:
 1. **Download** the IPQuorum JAR artifact to a local file.
 2. Optionally **create a fresh Quorum App** in the target system through the `mkquorumapp` API call.
 
 Both actions are configurable via command-line flags.
+
+**Key Features:**
+- **Secure password handling**: Interactive prompts, password files, or environment variables
+- **Password masking**: Never logs passwords in plain text
+- **Fail-fast authentication**: Immediately exits on wrong credentials (401/403)
+- **Smart retry logic**: Handles rate limiting (429) with exponential backoff
+- **Pre-flight validation**: Checks endpoint reachability before operations
+- **Flexible configuration**: Environment variables and CLI arguments
+
+> **Note:** For a Python version with cross-platform support and additional features, see [../python-version/README.md](../python-version/README.md)
 
 ---
 
@@ -53,6 +63,7 @@ Both actions are configurable via command-line flags.
 Download the IPQuorum JAR only:
 ```bash
 ./ipquorum-restapi-download.sh \
+  --api-endpoint <host> \
   --no-mkquorumapp --download \
   --output ip_quorum.jar \
   --user <username> --pass <password>
@@ -61,6 +72,7 @@ Download the IPQuorum JAR only:
 Create a Quorum App and download the IPQuorum JAR in one run:
 ```bash
 ./ipquorum-restapi-download.sh \
+  --api-endpoint <host> \
   --mkquorumapp --partnersystem <remote_system_name> \
   --ip6=false --partnerip6=false --nometadata=false \
   --download --insecure \
@@ -105,6 +117,7 @@ You can combine **general** options with **mkquorumapp payload** options. When `
 Create Quorum App + Download JAR:
 ```bash
 ./ipquorum-restapi-download.sh \
+  --api-endpoint 10.33.7.80 \
   --mkquorumapp --partnersystem svc_cluster02 \
   --ip6=false --partnerip6=false --nometadata=false \
   --download --insecure \
@@ -114,6 +127,7 @@ Create Quorum App + Download JAR:
 Download JAR only:
 ```bash
 ./ipquorum-restapi-download.sh \
+  --api-endpoint 10.33.7.80 \
   --no-mkquorumapp --download \
   --output ip_quorum.jar \
   --user superuser --pass password

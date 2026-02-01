@@ -1,0 +1,51 @@
+[Unit]
+Description=IBM Storage Virtualize IP Quorum Service
+Documentation=https://www.ibm.com/docs/en/flashsystem-7x00/8.6.x?topic=cq-ip-quorum-application-configuration
+Documentation=https://www.ibm.com/support/pages/node/7013877
+After=local-fs.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+
+# Environment configuration file
+EnvironmentFile=-/etc/ipquorum/ipquorum.conf
+
+# Pre-start: Download ip_quorum.jar if enabled
+ExecStartPre=/usr/local/bin/ipquorum-download.sh
+
+# Main service: Run IP Quorum Java application with options
+# Note: WorkingDirectory must be set before ExecStart
+WorkingDirectory=/opt/IBM/ip-quorum/log
+ExecStart=/usr/local/bin/ipquorum-start.sh
+
+# Restart policy
+Restart=on-failure
+RestartSec=10s
+StartLimitInterval=300s
+StartLimitBurst=5
+
+# User and group (read from environment file)
+User=${IPQUORUM_USER}
+Group=${IPQUORUM_GROUP}
+
+# Security hardening
+PrivateTmp=yes
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/IBM/ip-quorum
+ReadOnlyPaths=/etc/ipquorum
+
+# Resource limits
+LimitNOFILE=65536
+MemoryMax=512M
+CPUQuota=50%
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ipquorum
+
+[Install]
+WantedBy=multi-user.target

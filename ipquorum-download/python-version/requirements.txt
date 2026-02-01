@@ -1,0 +1,10 @@
+# IBM Storage Virtualize IP Quorum Download Script - Python Dependencies
+
+# HTTP library for REST API calls
+requests>=2.27.0
+
+# URL handling and SSL support
+urllib3>=1.26.0
+
+# Dataclasses backport for Python 3.6 compatibility
+dataclasses>=0.6; python_version < '3.7'

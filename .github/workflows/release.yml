@@ -1,0 +1,189 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Go Binaries
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            output: ipquorum-download-go-linux-amd64
+          - goos: linux
+            goarch: arm64
+            output: ipquorum-download-go-linux-arm64
+          - goos: darwin
+            goarch: amd64
+            output: ipquorum-download-go-darwin-amd64
+          - goos: darwin
+            goarch: arm64
+            output: ipquorum-download-go-darwin-arm64
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      
+      - name: Build binary
+        working-directory: ./ipquorum-download-go
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 0
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          COMMIT=$(git rev-parse --short HEAD)
+          DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          
+          go build -ldflags "-s -w -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.date=${DATE}" \
+            -o ${{ matrix.output }} \
+            main.go
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.output }}
+          path: ipquorum-download-go/${{ matrix.output }}
+          retention-days: 1
+
+  package:
+    name: Create Release Package
+    needs: build
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: binaries
+      
+      - name: Create release package
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          RELEASE_DIR="ipquorum-service-${VERSION}"
+          
+          # Create release directory structure
+          mkdir -p "${RELEASE_DIR}/bin"
+          mkdir -p "${RELEASE_DIR}/systemd"
+          mkdir -p "${RELEASE_DIR}/docs"
+          
+          # Copy Go binaries
+          find binaries -type f -name "ipquorum-download-go-*" -exec cp {} "${RELEASE_DIR}/bin/" \;
+          chmod +x "${RELEASE_DIR}/bin/"*
+          
+          # Copy systemd service files
+          cp ipquorum-systemd/ibm-virtualize-ipquorum-improved.service "${RELEASE_DIR}/systemd/"
+          cp ipquorum-systemd/ipquorum.conf "${RELEASE_DIR}/systemd/"
+          cp ipquorum-systemd/ipquorum-download.sh "${RELEASE_DIR}/systemd/"
+          cp ipquorum-systemd/ipquorum-start.sh "${RELEASE_DIR}/systemd/"
+          cp ipquorum-systemd/install-ipquorum-service.sh "${RELEASE_DIR}/"
+          chmod +x "${RELEASE_DIR}/install-ipquorum-service.sh"
+          chmod +x "${RELEASE_DIR}/systemd/"*.sh
+          
+          # Copy documentation
+          cp README.md "${RELEASE_DIR}/"
+          cp ipquorum-systemd/README-IMPROVED-SERVICE.md "${RELEASE_DIR}/docs/"
+          cp ipquorum-systemd/ARCHITECTURE.md "${RELEASE_DIR}/docs/"
+          cp ipquorum-systemd/CHANGELOG.md "${RELEASE_DIR}/docs/"
+          cp ipquorum-systemd/LOGO.md "${RELEASE_DIR}/docs/"
+          cp DEPLOYMENT-GUIDE.md "${RELEASE_DIR}/docs/"
+          
+          # Create LICENSE file if it doesn't exist
+          if [ ! -f LICENSE ]; then
+            echo "IBM Storage Virtualize IP Quorum Service" > "${RELEASE_DIR}/LICENSE"
+            echo "See IBM Storage Virtualize documentation for license terms" >> "${RELEASE_DIR}/LICENSE"
+          else
+            cp LICENSE "${RELEASE_DIR}/"
+          fi
+          
+          # Create VERSION file
+          echo "${VERSION}" > "${RELEASE_DIR}/VERSION"
+          
+          # Create tarball
+          tar -czf "ipquorum-service-${VERSION}.tar.gz" "${RELEASE_DIR}"
+          
+          # Generate checksums
+          sha256sum "ipquorum-service-${VERSION}.tar.gz" > checksums.txt
+          sha256sum "${RELEASE_DIR}/bin/"* >> checksums.txt
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            ipquorum-service-*.tar.gz
+            checksums.txt
+          body: |
+            ## IBM Storage Virtualize IP Quorum Service
+            
+            ### Installation
+            
+            **Quick Install (Recommended):**
+            ```bash
+            # Download and extract
+            wget https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/ipquorum-service-${{ github.ref_name }}.tar.gz
+            tar -xzf ipquorum-service-${{ github.ref_name }}.tar.gz
+            cd ipquorum-service-${{ github.ref_name }}
+            
+            # Run installer
+            sudo ./install-ipquorum-service.sh
+            ```
+            
+            **Manual Binary Installation:**
+            ```bash
+            # Download binary for your platform
+            wget https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/ipquorum-download-go-linux-amd64
+            chmod +x ipquorum-download-go-linux-amd64
+            sudo mv ipquorum-download-go-linux-amd64 /usr/local/bin/ipquorum-download-go
+            ```
+            
+            ### What's Included
+            
+            - ✅ Pre-built Go binaries for Linux (amd64, arm64) and macOS (Intel, Apple Silicon)
+            - ✅ Systemd service files and configuration
+            - ✅ Automated installation script
+            - ✅ Complete documentation
+            
+            ### Supported Platforms
+            
+            - Linux x86_64 (amd64)
+            - Linux ARM64
+            - macOS Intel (amd64)
+            - macOS Apple Silicon (arm64)
+            
+            ### Documentation
+            
+            - [Installation Guide](docs/README-IMPROVED-SERVICE.md)
+            - [Architecture Overview](docs/ARCHITECTURE.md)
+            - [Deployment Guide](docs/DEPLOYMENT-GUIDE.md)
+            - [Changelog](docs/CHANGELOG.md)
+            
+            ### Checksums
+            
+            Verify your download:
+            ```bash
+            sha256sum -c checksums.txt
+            ```
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+# Made with help from Bob
