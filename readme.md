@@ -23,7 +23,9 @@ IBM Storage Virtualize powers the IBM Storage FlashSystem and IBM SVC
 
 ## 🚀 Deployment Optionsfor IP Quorum Service 
 
-* [Guides for Running IP Quorum as a Systemd on linux](ipquorum-systemd/readme-ipquorum-systemd.md)
+* [Installer with Quorum APP downloader for Running IP Quorum as a Systemd on linux](ipquorum-systemd/README-IMPROVED-SERVICE.md)
+
+* [Manual Guides for Running IP Quorum as a Systemd on linux](ipquorum-systemd/manual-config/readme-ipquorum-systemd.md)
 
 * [Guides for Running IP Quorum as a Container on linux](ipquorum-container/ibm-virtualize-ipquorum-container.md)
 

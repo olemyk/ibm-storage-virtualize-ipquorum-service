@@ -98,17 +98,13 @@ jobs:
           chmod +x "${RELEASE_DIR}/systemd/"*.sh
           
           # Copy documentation
-          cp README.md "${RELEASE_DIR}/"
           cp ipquorum-systemd/README-IMPROVED-SERVICE.md "${RELEASE_DIR}/docs/"
           cp ipquorum-systemd/ARCHITECTURE.md "${RELEASE_DIR}/docs/"
           cp ipquorum-systemd/CHANGELOG.md "${RELEASE_DIR}/docs/"
-          cp ipquorum-systemd/LOGO.md "${RELEASE_DIR}/docs/"
-          cp DEPLOYMENT-GUIDE.md "${RELEASE_DIR}/docs/"
           
           # Create LICENSE file if it doesn't exist
           if [ ! -f LICENSE ]; then
             echo "IBM Storage Virtualize IP Quorum Service" > "${RELEASE_DIR}/LICENSE"
-            echo "See IBM Storage Virtualize documentation for license terms" >> "${RELEASE_DIR}/LICENSE"
           else
             cp LICENSE "${RELEASE_DIR}/"
           fi
@@ -156,7 +152,7 @@ jobs:
             
             ### What's Included
             
-            - ✅ Pre-built Go binaries for Linux (amd64, arm64) and macOS (Intel, Apple Silicon)
+            - ✅ Pre-built Go binaries for Linux (amd64, arm64)
             - ✅ Systemd service files and configuration
             - ✅ Automated installation script
             - ✅ Complete documentation
@@ -164,15 +160,11 @@ jobs:
             ### Supported Platforms
             
             - Linux x86_64 (amd64)
-            - Linux ARM64
-            - macOS Intel (amd64)
-            - macOS Apple Silicon (arm64)
             
             ### Documentation
             
             - [Installation Guide](docs/README-IMPROVED-SERVICE.md)
             - [Architecture Overview](docs/ARCHITECTURE.md)
-            - [Deployment Guide](docs/DEPLOYMENT-GUIDE.md)
             - [Changelog](docs/CHANGELOG.md)
             
             ### Checksums

@@ -1,5 +1,25 @@
 # IBM Storage Virtualize IP Quorum Service - Improved Version
 
+
+```
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║     ██╗██████╗       ██████╗ ██╗   ██╗ ██████╗ ██████╗ ██╗   ██╗███╗   ███╗  ║
+║     ██║██╔══██╗     ██╔═══██╗██║   ██║██╔═══██╗██╔══██╗██║   ██║████╗ ████║  ║
+║     ██║██████╔╝     ██║   ██║██║   ██║██║   ██║██████╔╝██║   ██║██╔████╔██║  ║
+║     ██║██╔═══╝      ██║▄▄ ██║██║   ██║██║   ██║██╔══██╗██║   ██║██║╚██╔╝██║  ║
+║     ██║██║          ╚██████╔╝╚██████╔╝╚██████╔╝██║  ██║╚██████╔╝██║ ╚═╝ ██║  ║
+║     ╚═╝╚═╝           ╚══▀▀═╝  ╚═════╝  ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝  ║
+║                                                                              ║
+║  ┌────────────────────────────────────────────────────────────────────────┐  ║
+║  │  IBM Storage Virtualize High Availability Quorum Service               │  ║
+║  │  Automated Download • Systemd Integration                              │  ║
+║  └────────────────────────────────────────────────────────────────────────┘  ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+```
+
+
 This is an enhanced version of the IP Quorum systemd service with automatic download capability, comprehensive configuration options, and improved security.
 
 ## 🆕 What's New in the Improved Version
@@ -504,6 +524,8 @@ sudo lsof -i:1260
 ### Log Rotation
 
 The IP Quorum application automatically rotates logs. Download logs are appended to `/opt/IBM/ip-quorum/log/download.log`.
+
+PS: there is log options in the ip_quorum.jar file also.
 
 To configure log rotation:
 
