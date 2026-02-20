@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/olemyk/ipquorum-go/internal/errors"
-	"github.com/olemyk/ipquorum-go/internal/utils"
 	"github.com/olemyk/ipquorum-go/pkg/client"
 	"github.com/olemyk/ipquorum-go/pkg/config"
 	"github.com/olemyk/ipquorum-go/pkg/logger"
@@ -170,7 +169,7 @@ func run(cmd *cobra.Command, args []string) error {
 		log.Debug("ip6=%t, nometadata=%t, partnersystem='%s', partnerip6=%t",
 			cfg.IP6, cfg.NoMetadata, cfg.PartnerSystem, cfg.PartnerIP6)
 		log.Debug("user='%s', endpoint='%s'", cfg.Username, cfg.APIEndpoint)
-		log.Debug("password='%s'", utils.MaskPassword(cfg.Password, 0))
+		log.Debug("password='%s'", password.MaskPassword(cfg.Password, 0))
 	}
 
 	// Validate configuration
