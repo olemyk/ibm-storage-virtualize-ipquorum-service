@@ -18,4 +18,4 @@ func ToBool(value string) bool {
 	}
 }
 
-// Made with help from Bob
+//

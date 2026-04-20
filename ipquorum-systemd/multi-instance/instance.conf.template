@@ -1,0 +1,257 @@
+# ============================================================================
+# IBM Storage Virtualize IP Quorum Instance Configuration Template
+# ============================================================================
+#
+# Instance Name: <INSTANCE_NAME>
+# Description: <DESCRIPTION>
+# Created: <DATE>
+#
+# This file should be copied to: /etc/ipquorum/instances/<instance-name>.conf
+#
+# IMPORTANT: Replace all <PLACEHOLDER> values with actual configuration
+#
+# ============================================================================
+
+# ============================================================================
+# INSTANCE IDENTIFICATION
+# ============================================================================
+
+# Instance name (must match the systemd instance name)
+# Example: system1, datacenter-a, partition-prod
+INSTANCE_NAME=<INSTANCE_NAME>
+
+# IBM Storage System name (OPTIONAL - for documentation/identification only)
+# This field is NOT used for connectivity - it's purely for human readability
+# Use it to identify which storage system this instance connects to
+# The actual connection uses API_ENDPOINT below
+# Example: "svc_cluster01", "Production-SAN", "DataCenter-A-Storage"
+# Leave as "<HOSTNAME_OR_IP>" or empty if not needed (will show as "N/A" in list)
+IBM_STORAGE_SYSTEM="<HOSTNAME_OR_IP>"
+
+# IBM Storage System description (optional, for documentation)
+# Example: "IBM FlashSystem 9200 - Production Site A"
+IBM_STORAGE_DESCRIPTION=""
+
+# IBM Storage System location (optional)
+# Example: "Datacenter A, Rack 12"
+IBM_STORAGE_LOCATION=""
+
+# ============================================================================
+# BASIC CONFIGURATION
+# ============================================================================
+
+# IP Quorum installation directory (instance-specific)
+# Default: /var/lib/ipquorum/${INSTANCE_NAME}
+IPQUORUM_DIR=/var/lib/ipquorum/${INSTANCE_NAME}
+
+# IP Quorum JAR file location
+IPQUORUM_JAR=${IPQUORUM_DIR}/ip_quorum.jar
+
+# Log directory (instance-specific)
+# Default: /var/log/ipquorum/${INSTANCE_NAME}
+IPQUORUM_LOG_DIR=/var/log/ipquorum/${INSTANCE_NAME}
+
+# User and group to run the service
+IPQUORUM_USER=ipquorum
+IPQUORUM_GROUP=ipquorum
+
+# ============================================================================
+# DOWNLOAD CONFIGURATION
+# ============================================================================
+
+# Enable automatic download on service start/restart
+# Set to "true" to enable, "false" to disable
+# When disabled, the service will only check if the JAR file exists
+IPQUORUM_DOWNLOAD_ENABLED=true
+
+# Download tool to use: go, python, or bash
+# - go:     Fast, single binary, recommended (requires ipquorum-download-go)
+# - python: Feature-rich, requires Python 3.8+ (requires ipquorum-download.py)
+# - bash:   Portable, requires curl and jq (requires ipquorum-restapi-download.sh)
+IPQUORUM_DOWNLOAD_TOOL=go
+
+# Paths to download tools (adjust if installed in different locations)
+DOWNLOAD_TOOL_GO=/usr/local/bin/ipquorum-download-go
+DOWNLOAD_TOOL_PYTHON=/usr/local/bin/ipquorum-download.py
+DOWNLOAD_TOOL_BASH=/usr/local/bin/ipquorum-restapi-download.sh
+
+# Enable backup of existing JAR file before downloading new one
+# Set to "true" to enable, "false" to disable
+# Backup file will be saved as: ip_quorum.jar.backup
+IPQUORUM_BACKUP_ENABLED=true
+
+# ============================================================================
+# STORAGE VIRTUALIZE API CONFIGURATION
+# ============================================================================
+
+# Storage Virtualize API endpoint (IP address or hostname) - REQUIRED
+# Example: 10.33.7.80 or sv-cluster.example.com
+API_ENDPOINT=<API_ENDPOINT>
+
+# Storage Virtualize username - REQUIRED
+# Minimum required role:
+# - For download only: Monitor role
+# - For mkquorumapp: Restricted Administrator or higher
+VIRTUALIZE_USERNAME=<USERNAME>
+
+# Password file location (REQUIRED for automatic download)
+# This file should contain only the password (one line, no trailing newline recommended)
+# The file must be readable by the ipquorum user
+#
+# BEST PRACTICE: Store in /var/lib for proper SELinux context
+# Recommended setup:
+#   sudo mkdir -p /var/lib/ipquorum/.passwords
+#   echo "your_password" | sudo tee /var/lib/ipquorum/.passwords/${INSTANCE_NAME}.password > /dev/null
+#   sudo chmod 440 /var/lib/ipquorum/.passwords/${INSTANCE_NAME}.password
+#   sudo chown ipquorum:ipquorum /var/lib/ipquorum/.passwords/${INSTANCE_NAME}.password
+#   sudo restorecon -v /var/lib/ipquorum/.passwords/${INSTANCE_NAME}.password
+#
+VIRTUALIZE_PASSWORD_FILE=/var/lib/ipquorum/.passwords/${INSTANCE_NAME}.password
+
+# API Port (default: 7443)
+API_PORT=7443
+
+# ============================================================================
+# MKQUORUMAPP CONFIGURATION (Create New Quorum App)
+# ============================================================================
+
+# Enable mkquorumapp call to create a new IP Quorum application
+# Set to "true" to create new quorum app, "false" to only download existing
+# Note: If enabled, IPQUORUM_PARTNERSYSTEM is MANDATORY
+IPQUORUM_MKQUORUMAPP_ENABLED=false
+
+# Partner system name (MANDATORY if IPQUORUM_MKQUORUMAPP_ENABLED=true)
+# This is the remote system name in a PBHA (PowerHA) configuration
+# Example: svc_cluster02, remote-site-cluster
+IPQUORUM_PARTNERSYSTEM=
+
+# IPv6 configuration for local system
+# Set to "true" if local system uses IPv6, "false" for IPv4
+IPQUORUM_IP6=false
+
+# Metadata configuration
+# Set to "true" to disable metadata (tie-break only)
+# Set to "false" to enable metadata (cluster recovery)
+IPQUORUM_NOMETADATA=false
+
+# IPv6 configuration for partner system
+# Set to "true" if partner system uses IPv6, "false" for IPv4
+IPQUORUM_PARTNERIP6=false
+
+# ============================================================================
+# TLS/SSL CONFIGURATION
+# ============================================================================
+
+# TLS certificate verification
+# Set to "false" for insecure TLS (self-signed certificates) - DEFAULT
+# Set to "true" for strict TLS verification (valid certificates required)
+IPQUORUM_TLS_VERIFY=false
+
+# ============================================================================
+# IP QUORUM APPLICATION OPTIONS
+# ============================================================================
+
+# IP Quorum instance name (optional)
+# Helps identify the IP quorum app instance in the GUI/lsquorum
+# Can only contain 1-20 characters that are A-Z, a-z or 0-9 (no dashes or underscores)
+# Default: Uses INSTANCE_NAME with dashes/underscores removed
+# Example: IPQUORUM_NAME=prodsite1
+IPQUORUM_NAME=${INSTANCE_NAME}
+
+# Enable debug mode (optional)
+# Set to "true" to run the app in debug mode with verbose messages
+# Debug output will appear in stdout and log files
+IPQUORUM_DEBUG=false
+
+# Enable T3 metadata header information (optional)
+# Set to "true" to display T3 metadata header information
+IPQUORUM_EMIT=false
+
+# Log file location (optional)
+# Default: ip_quorum.log.{timestamp} in working directory
+# Specify the full or relative path to store log files
+# Allowed characters: [a-z A-Z 0-9 .-_/]
+# Example: IPQUORUM_LOG_LOCATION=/var/log/ipquorum/${INSTANCE_NAME}/ip_quorum.log
+IPQUORUM_LOG_LOCATION=${IPQUORUM_LOG_DIR}/ip_quorum.log
+
+# Log rotation count (optional)
+# Default: 5
+# Specify the maximum number of log files to keep
+# Allowed values: 1-10
+IPQUORUM_LOG_ROTATION=5
+
+# Log file size in KB (optional)
+# Default: 5120 (5MB)
+# Specify the log file size in kilobytes
+# Allowed values: 1024-10240 (1MB-10MB)
+IPQUORUM_LOG_SIZE=5120
+
+# ============================================================================
+# RESOURCE LIMITS (SYSTEMD)
+# ============================================================================
+
+# Maximum memory usage for this instance
+# Default: 512M
+# Examples: 256M, 512M, 1G
+IPQUORUM_MEMORY_MAX=512M
+
+# CPU quota for this instance (percentage)
+# Default: 50%
+# Examples: 25%, 50%, 100%
+IPQUORUM_CPU_QUOTA=50%
+
+# ============================================================================
+# ADVANCED CONFIGURATION
+# ============================================================================
+
+# Java binary location (usually auto-detected)
+JAVA_BIN=/usr/bin/java
+
+# Additional Java options (optional)
+# Example: JAVA_OPTS="-Xmx256m -Xms128m"
+JAVA_OPTS=
+
+# Download timeout in seconds (for curl-based downloads)
+DOWNLOAD_TIMEOUT=300
+
+# Maximum retries for API calls
+MAX_RETRIES=8
+
+# Base delay between retries (seconds)
+BASE_DELAY=3
+
+# ============================================================================
+# MONITORING & ALERTING (OPTIONAL)
+# ============================================================================
+
+# Enable health check monitoring
+IPQUORUM_HEALTH_CHECK_ENABLED=false
+
+# Health check interval (seconds)
+IPQUORUM_HEALTH_CHECK_INTERVAL=60
+
+# Alert email address (optional)
+IPQUORUM_ALERT_EMAIL=
+
+# ============================================================================
+# NOTES
+# ============================================================================
+#
+# 1. After creating/modifying this file:
+#    - Reload systemd: sudo systemctl daemon-reload
+#    - Restart instance: sudo systemctl restart ipquorum@<instance-name>
+#
+# 2. View instance status:
+#    sudo systemctl status ipquorum@<instance-name>
+#
+# 3. View instance logs:
+#    sudo journalctl -u ipquorum@<instance-name> -f
+#    sudo tail -f /var/log/ipquorum/<instance-name>/download.log
+#
+# 4. Security:
+#    - Never commit password files to version control
+#    - Use restrictive permissions on password files (400 or 440)
+#    - Regularly rotate passwords
+#
+# ============================================================================
+

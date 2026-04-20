@@ -80,27 +80,42 @@ jobs:
           RELEASE_DIR="ipquorum-service-${VERSION}"
           
           # Create release directory structure
-          mkdir -p "${RELEASE_DIR}/bin"
+          mkdir -p "${RELEASE_DIR}/ipquorum-downloader"
           mkdir -p "${RELEASE_DIR}/systemd"
           mkdir -p "${RELEASE_DIR}/docs"
           
           # Copy Go binaries
-          find binaries -type f -name "ipquorum-download-go-*" -exec cp {} "${RELEASE_DIR}/bin/" \;
-          chmod +x "${RELEASE_DIR}/bin/"*
+          find binaries -type f -name "ipquorum-download-go-*" -exec cp {} "${RELEASE_DIR}/ipquorum-downloader/" \;
+          chmod +x "${RELEASE_DIR}/ipquorum-downloader/"*
           
-          # Copy systemd service files
-          cp ipquorum-systemd/ibm-virtualize-ipquorum-improved.service "${RELEASE_DIR}/systemd/"
-          cp ipquorum-systemd/ipquorum.conf "${RELEASE_DIR}/systemd/"
-          cp ipquorum-systemd/ipquorum-download.sh "${RELEASE_DIR}/systemd/"
-          cp ipquorum-systemd/ipquorum-start.sh "${RELEASE_DIR}/systemd/"
-          cp ipquorum-systemd/install-ipquorum-service.sh "${RELEASE_DIR}/"
-          chmod +x "${RELEASE_DIR}/install-ipquorum-service.sh"
+          # Copy multi-instance system files
+          cp ipquorum-systemd/multi-instance/ipquorum@.service "${RELEASE_DIR}/systemd/"
+          cp ipquorum-systemd/multi-instance/ipquorum-download-multi.sh "${RELEASE_DIR}/systemd/"
+          cp ipquorum-systemd/multi-instance/ipquorum-start-multi.sh "${RELEASE_DIR}/systemd/"
+          cp ipquorum-systemd/multi-instance/ipquorum-validate-multi.sh "${RELEASE_DIR}/systemd/"
+          cp ipquorum-systemd/multi-instance/install-ipquorum-service.sh "${RELEASE_DIR}/"
+          cp ipquorum-systemd/multi-instance/ipquorum-instance-manager.sh "${RELEASE_DIR}/systemd/"
+          cp ipquorum-systemd/multi-instance/instance.conf.template "${RELEASE_DIR}/systemd/"
+          
+          # Copy multi-instance examples
+          mkdir -p "${RELEASE_DIR}/systemd/examples"
+          cp ipquorum-systemd/multi-instance/examples/*.conf "${RELEASE_DIR}/systemd/examples/"
+          
+          # Copy multi-instance troubleshooting tools
+          mkdir -p "${RELEASE_DIR}/systemd/troubleshoot-tools"
+          cp ipquorum-systemd/multi-instance/troubleshoot-tools/*.sh "${RELEASE_DIR}/systemd/troubleshoot-tools/"
+          
+          # Make scripts executable
+          chmod +x "${RELEASE_DIR}/install-multi-instance.sh"
           chmod +x "${RELEASE_DIR}/systemd/"*.sh
+          chmod +x "${RELEASE_DIR}/systemd/troubleshoot-tools/"*.sh
           
           # Copy documentation
-          cp ipquorum-systemd/README-IMPROVED-SERVICE.md "${RELEASE_DIR}/docs/"
-          cp ipquorum-systemd/ARCHITECTURE.md "${RELEASE_DIR}/docs/"
-          cp ipquorum-systemd/CHANGELOG.md "${RELEASE_DIR}/docs/"
+          cp ipquorum-systemd/multi-instance/README.md "${RELEASE_DIR}/docs/"
+          cp ipquorum-systemd/multi-instance/README-ADVANCED.md "${RELEASE_DIR}/docs/"
+          cp ipquorum-systemd/multi-instance/QUICK-REFERENCE.md "${RELEASE_DIR}/docs/"
+          cp ipquorum-systemd/multi-instance/IMPLEMENTATION-SUMMARY.md "${RELEASE_DIR}/docs/"
+          cp ipquorum-systemd/multi-instance/RESOURCE-LIMITS.md "${RELEASE_DIR}/docs/" 2>/dev/null || true
           
           # Create LICENSE file if it doesn't exist
           if [ ! -f LICENSE ]; then
@@ -127,11 +142,12 @@ jobs:
             ipquorum-service-*.tar.gz
             checksums.txt
           body: |
-            ## IBM Storage Virtualize IP Quorum Service
+            ## IBM Storage Virtualize IP Quorum Service - Multi-Instance
             
-            ### Installation
+            ### 🚀 Quick Start
             
-            **Quick Install (Recommended):**
+            Run multiple independent IP Quorum instances on a single host:
+            
             ```bash
             # Download and extract
             wget https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/ipquorum-service-${{ github.ref_name }}.tar.gz
@@ -139,7 +155,13 @@ jobs:
             cd ipquorum-service-${{ github.ref_name }}
             
             # Run installer
-            sudo ./install-ipquorum-service.sh
+            sudo ./install-multi-instance.sh
+            
+            # Create your first instance
+            sudo ./systemd/ipquorum-instance-manager.sh create myinstance
+            
+            # Enable and start
+            sudo systemctl enable --now ipquorum@myinstance.service
             ```
             
             **Manual Binary Installation:**
@@ -150,32 +172,56 @@ jobs:
             sudo mv ipquorum-download-go-linux-amd64 /usr/local/bin/ipquorum-download-go
             ```
             
-            ### What's Included
+            ### 📦 What's Included
             
-            - ✅ Pre-built Go binaries for Linux (amd64, arm64)
-            - ✅ Systemd service files and configuration
+            - ✅ Pre-built Go binaries for Linux (amd64, arm64) and macOS
+            - ✅ Multi-instance systemd template service
             - ✅ Automated installation script
+            - ✅ Instance management CLI tool
+            - ✅ Example configurations
+            - ✅ Troubleshooting tools
             - ✅ Complete documentation
             
-            ### Supported Platforms
+            ### 🎯 Key Features
             
-            - Linux x86_64 (amd64)
+            - **Multiple Independent Instances**: Each connects to a different IBM Storage system
+            - **Systemd Template Units**: Easy management with `ipquorum@<name>.service`
+            - **Interactive Configuration**: Guided setup with instance manager
+            - **SELinux Compatible**: Proper file contexts and permissions
+            - **Auto-Download & Validation**: Automatic JAR file management
+            - **Resource Limits**: Per-instance CPU and memory quotas
+            - **Isolated Resources**: Separate directories, logs, and processes
             
-            ### Documentation
+            ### 📚 Documentation
             
-            - [Installation Guide](docs/README-IMPROVED-SERVICE.md)
-            - [Architecture Overview](docs/ARCHITECTURE.md)
-            - [Changelog](docs/CHANGELOG.md)
+            - [Quick Start Guide](docs/README.md)
+            - [Advanced Guide](docs/README-ADVANCED.md)
+            - [Quick Reference](docs/QUICK-REFERENCE.md)
+            - [Implementation Details](docs/IMPLEMENTATION-SUMMARY.md)
             
-            ### Checksums
+            ### ✅ Checksums
             
             Verify your download:
             ```bash
             sha256sum -c checksums.txt
+            ```
+            
+            ### 💡 Example Usage
+            
+            ```bash
+            # List all instances
+            sudo systemctl list-units 'ipquorum@*'
+            
+            # Manage instances
+            sudo systemctl start ipquorum@system1.service
+            sudo systemctl status ipquorum@system1.service
+            
+            # View logs
+            sudo journalctl -u ipquorum@system1.service -f
             ```
           draft: false
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-# Made with help from Bob
+

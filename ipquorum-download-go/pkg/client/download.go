@@ -105,4 +105,4 @@ func (c *Client) DownloadJAR() error {
 	return nil
 }
 
-// Made with help from Bob
+//

@@ -63,4 +63,4 @@ func (l *Logger) IsDebug() bool {
 	return l.debug
 }
 
-// Made with help from Bob
+//

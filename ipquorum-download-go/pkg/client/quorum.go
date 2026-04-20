@@ -93,4 +93,4 @@ func (c *Client) CreateQuorumApp() error {
 	return errors.NewAPIError(errorMsg, statusCode, url)
 }
 
-// Made with help from Bob
+//

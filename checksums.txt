@@ -1,0 +1,5 @@
+e2844192a141757ef0cda5a81732b846b2fc43c13bbc1947a0cc84feb53df61b  ipquorum-service-2.0.6.tar.gz
+939788512600b91651b1ba13d21cf386507256ad5c0eccac0647dfcfbfdc41d5  ipquorum-service-2.0.6/ipquorum-downloader/ipquorum-download-go-darwin-amd64
+3e22f10a01ef51bee1d23d79548ec12269226294742bcaac460fdc3951c1533c  ipquorum-service-2.0.6/ipquorum-downloader/ipquorum-download-go-darwin-arm64
+f470ba11e20aa18dad9f562688be091e11eca5c2cd1f8094834b483e6caf17a2  ipquorum-service-2.0.6/ipquorum-downloader/ipquorum-download-go-linux-amd64
+41c8953c264564add8ca7001830705eaabcfee3f8a77f23c2d31555285eef15e  ipquorum-service-2.0.6/ipquorum-downloader/ipquorum-download-go-linux-arm64

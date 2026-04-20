@@ -73,4 +73,4 @@ func NewAPIError(message string, statusCode int, endpoint string) *APIError {
 	}
 }
 
-// Made with help from Bob
+//

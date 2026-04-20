@@ -82,4 +82,4 @@ fi
 # shellcheck disable=SC2086
 exec "$JAVA_BIN" $JAVA_OPTS -jar "$IPQUORUM_JAR" "${IPQUORUM_ARGS[@]}"
 
-# Made with help from Bob
+

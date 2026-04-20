@@ -110,4 +110,4 @@ func MaskPassword(password string, showChars int) string {
 	return strings.Repeat("*", maskLen)
 }
 
-// Made with help from Bob
+//

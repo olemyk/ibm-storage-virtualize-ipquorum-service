@@ -1,0 +1,58 @@
+[Unit]
+Description=IBM Storage Virtualize IP Quorum Service (%i)
+Documentation=https://www.ibm.com/docs/en/flashsystem-7x00/8.6.x?topic=cq-ip-quorum-application-configuration
+Documentation=https://www.ibm.com/support/pages/node/7013877
+Documentation=file:///etc/ipquorum/README-MULTI-INSTANCE.md
+After=local-fs.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+
+# Instance-specific environment file
+EnvironmentFile=/etc/ipquorum/instances/%i.conf
+
+# Instance-specific working directory
+WorkingDirectory=/var/lib/ipquorum/%i
+
+# Pre-start: Validate environment
+ExecStartPre=/usr/local/bin/ipquorum-validate-multi.sh %i
+
+# Pre-start: Download ip_quorum.jar if enabled
+ExecStartPre=/usr/local/bin/ipquorum-download-multi.sh %i
+
+# Main service: Run IP Quorum Java application with options
+ExecStart=/usr/local/bin/ipquorum-start-multi.sh %i
+
+# Restart policy - more lenient for initial connection issues
+Restart=on-failure
+RestartSec=30s
+StartLimitInterval=600s
+StartLimitBurst=10
+
+# User and group - hardcoded as systemd doesn't expand variables here
+User=ipquorum
+Group=ipquorum
+
+# Security hardening
+PrivateTmp=yes
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/ipquorum/%i /var/log/ipquorum/%i
+ReadOnlyPaths=/etc/ipquorum
+
+# Resource limits (per instance) - defaults, override via drop-in files
+LimitNOFILE=65536
+MemoryMax=512M
+CPUQuota=50%
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ipquorum-%i
+
+[Install]
+WantedBy=multi-user.target
+# Note: Alias directive removed due to compatibility issues with older systemd versions
+# Use the full service name: ipquorum@<instance>.service

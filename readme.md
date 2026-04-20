@@ -1,334 +1,399 @@
-# Repo for the IBM Storage Virtualize — IP Quorum application Service
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║     ██╗██████╗       ██████╗ ██╗   ██╗ ██████╗ ██████╗ ██╗   ██╗███╗   ███╗  ║
+║     ██║██╔══██╗     ██╔═══██╗██║   ██║██╔═══██╗██╔══██╗██║   ██║████╗ ████║  ║
+║     ██║██████╔╝     ██║   ██║██║   ██║██║   ██║██████╔╝██║   ██║██╔████╔██║  ║
+║     ██║██╔═══╝      ██║▄▄ ██║██║   ██║██║   ██║██╔══██╗██║   ██║██║╚██╔╝██║  ║
+║     ██║██║          ╚██████╔╝╚██████╔╝╚██████╔╝██║  ██║╚██████╔╝██║ ╚═╝ ██║  ║
+║     ╚═╝╚═╝           ╚══▀▀═╝  ╚═════╝  ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝  ║
+║                                                                              ║
+║  ┌────────────────────────────────────────────────────────────────────────┐  ║
+║  │  IBM Storage Virtualize High Availability Quorum Service               │  ║
+║  │  Automated Installation • Multi-Instance Support • Go-Powered Download │  ║
+║  └────────────────────────────────────────────────────────────────────────┘  ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+```
 
-This repository provides resources and guides for running the IP Quorum application for IBM Storage Virtualize. It includes multiple deployment options and download tools for managing the service effectively.
+# Automated IP Quorum Service for IBM Storage Virtualize
 
-## 📘 About the IP Quorum Application for IBM Storage Virtualize
+**Automate your IP Quorum deployment** with intelligent installation, automatic JAR downloads, and multi-instance management for IBM Storage Virtualize (FlashSystem & SVC).
 
-## 🏗 Architecture
-Here's a simplified view of how IP Quorum interacts with IBM Storage Virtualize clusters:
+## ✨ Key Features
 
-<img src="ipquorum-systemd/images/ipquorum-smal.png" alt="drawing" style="width:600px;"/>
+- 🚀 **Fully Automated Installation** - One command setup with intelligent configuration
+- 🔄 **Multi-Instance Support** - Run multiple IP Quorum instances on a single host
+- 📥 **Automatic JAR Download** - Go-powered download tool (no dependencies!)
+- 🎯 **Instance Manager** - Easy create, configure, start, stop, and monitor instances
+- 🔒 **Production-Ready Security** - Systemd hardening, SELinux support, secure credentials
+- 📊 **Complete Observability** - Centralized logging, status monitoring, health checks
 
------
+---
 
-A quorum device is used to break a tie when a SAN fault occurs, when exactly half of the nodes that were previously a member of the cluster are present.
+## 🎯 What is IP Quorum?
 
-The IP quorum application is a Java application that runs on a separate server or host. (This can be physical or Virtual Machine.)
-An IP quorum application is used in IP networks to resolve failure scenarios where half the control canisters/nodes on the cluster become unavailable.
+### Split-Brain Prevention Concept
 
-The application determines which nodes or enclosures can continue processing host operations and avoids a split cluster, where both halves of the system continue to process I/O independently.
+```
+    ┌──────────────────────────────────────────────────────┐
+    │                                                       │
+    │   Site A                    Site B                   │
+    │   ┌────┐                    ┌────┐                   │
+    │   │ ██ │ ←─────────────────→│ ██ │                   │
+    │   └────┘    Link Failure    └────┘                   │
+    │      ↓                         ↓                      │
+    │      │                         │                      │
+    │      └────────→ ┌────┐ ←───────┘                     │
+    │                 │ Q  │  IP Quorum                    │
+    │                 └────┘  Decides!                     │
+    │                                                       │
+    │        Prevents Split-Brain Scenarios                │
+    │                                                       │
+    └──────────────────────────────────────────────────────┘
+```
 
-IBM Storage Virtualize powers the IBM Storage FlashSystem and IBM SVC
+**IP Quorum** is a tie-breaker service that prevents split-brain scenarios in IBM Storage Virtualize clusters. When exactly half of the nodes become unavailable due to a SAN fault, the IP Quorum application determines which nodes can continue processing host operations, ensuring data integrity and preventing independent I/O processing by both halves of the system.
+
+**Powers:** IBM Storage FlashSystem and IBM SAN Volume Controller (SVC)
+
+---
+
+## 🚀 Quick Start - Automated Installation
+
+### One-Command Installation
+
+```bash
+# Download and run the automated installer
+curl -fsSL https://github.com/olemyk/ibm-storage-virtualize-ipquorum-service/releases/latest/download/ipquorum-service-latest.tar.gz | tar -xz
+cd ipquorum-service-*
+sudo ./install-ipquorum-service.sh
+```
+
+The installer will:
+1. ✅ Install systemd service files
+2. ✅ Download Go binary (or use Python/Bash)
+3. ✅ Create directory structure
+4. ✅ Set up instance manager
+5. ✅ Configure permissions and security
+
+### Create Your First Instance
+
+```bash
+# Create instance interactively (recommended)
+sudo /usr/local/bin/ipquorum-instance-manager.sh create svc_cluster01
+
+# Or use the alias (after adding to ~/.bashrc)
+echo "alias ipqm='sudo /usr/local/bin/ipquorum-instance-manager.sh'" >> ~/.bashrc
+source ~/.bashrc
+sudo ipqm create svc_cluster01
+
+# Start the instance
+sudo ipqm enable svc_cluster01
+sudo ipqm start svc_cluster01
+
+# Check status
+sudo ipqm status svc_cluster01
+sudo ipqm logs svc_cluster01
+```
+
+**That's it!** Your IP Quorum service is running and will automatically:
+- Download the latest JAR file from your Storage Virtualize system
+- Start on boot
+- Restart on failure
+- Log to centralized location
 
 ---
 
 ## 📋 Prerequisites
 
-Before deploying the IP Quorum service, ensure you have:
-
 ### Required
-- **Linux host or VM** (physical or virtual machine, or container)
-- **Java Runtime Environment** (OpenJDK 8, 11, 14, or later)
-- **Network connectivity** to IBM Storage Virtualize cluster
-  - Port 1260/TCP (for IP Quorum communication)
-  - Port 7443/HTTPS (for REST API - if using automatic download)
-- **Valid credentials** for IBM Storage Virtualize:
-  - **Monitor** role (for downloading IP Quorum JAR)
-  - **Restricted Administrator** role (for creating new Quorum Apps)
+- **Linux host** (RHEL/CentOS/Rocky/AlmaLinux 8+, Ubuntu 20.04+)
+- **Java Runtime** (OpenJDK 8, 11, 14, or later)
+- **Network connectivity** to IBM Storage Virtualize:
+  - Port **1260/TCP** (IP Quorum communication)
+  - Port **7443/HTTPS** (REST API for automatic download)
+- **Valid credentials**:
+  - **Monitor** role (for downloading JAR)
+  - **Restricted Administrator** role (for creating Quorum Apps)
 
-### Optional (for automatic download)
-- **One of the download tools**: Go (recommended), Python, or Bash
-- **IBM Storage Virtualize Code 8.6.1 or later** (for REST API support)
+### Optional (Installed Automatically)
+- **Go binary** (recommended - no dependencies, fast)
+- **Python 3.8+** or **Bash** (alternative download tools)
 
 ---
 
-## 🚀 Deployment Options for IP Quorum Service
+## 🌟 Multi-Instance Architecture
 
-Choose the deployment method that best fits your environment:
+Run **multiple independent IP Quorum instances** on a single host - perfect for:
+- Multiple storage systems
+- Different data centers
+- Production and DR environments
+- PBHA (PowerHA) configurations
 
-### Comparison of Deployment Options
+### Architecture Overview
 
-| Feature | Automated Systemd | Manual Systemd | Container |
-|---------|------------------|----------------|-----------|
-| **Ease of Setup** | ✅ Easiest (automated script) | ⚠️ Manual steps | ⚠️ Manual steps |
-| **Auto-Download JAR** | ✅ Yes (optional) | ❌ No | ❌ No |
-| **Auto-Start on Boot** | ✅ Yes | ✅ Yes | ✅ Yes |
-| **Isolation** | ⚠️ System service | ⚠️ System service | ✅ Container isolated |
-| **Resource Management** | ✅ Systemd limits | ✅ Systemd limits | ✅ Container limits |
-| **Best For** | Production, automation | Custom setups | Container environments |
+<img src="ipquorum-systemd/images/ipquorum-smal.png" alt="IP Quorum Architecture" style="width:600px;"/>
 
-### 1. 🎯 Automated Systemd Service (Recommended)
+### Instance Management
 
-**Features:**
-- ✅ Automated installation script
-- ✅ Automatic JAR download on service start/restart
-- ✅ Centralized configuration file
-- ✅ Support for Go, Python, or Bash download tools
-- ✅ Automatic backup before updates
-- ✅ Enhanced security with systemd hardening
-
-**Quick Start:**
 ```bash
-# Run the installation script
-sudo ./install-ipquorum-service.sh
+# List all instances
+sudo ipqm list
 
-# Configure the service
-sudo vi /etc/ipquorum/ipquorum.conf
+# Create multiple instances
+sudo ipqm create datacenter-a
+sudo ipqm create datacenter-b
+sudo ipqm create production
 
-# Start the service
-sudo systemctl enable --now ipquorum
+# Manage instances
+sudo ipqm start datacenter-a
+sudo ipqm stop datacenter-b
+sudo ipqm restart production
+sudo ipqm status datacenter-a
+sudo ipqm logs datacenter-a -f
+
+# Enable/disable auto-start
+sudo ipqm enable datacenter-a
+sudo ipqm disable datacenter-b
+
+# Delete instance
+sudo ipqm delete old-system
 ```
 
-📖 **[Complete Guide: Automated Systemd Service with Auto-Download](ipquorum-systemd/README-IMPROVED-SERVICE.md)**
+Each instance has:
+- ✅ **Isolated configuration** (`/etc/ipquorum/instances/<name>.conf`)
+- ✅ **Separate credentials** (`/var/lib/ipquorum/<name>/.password`)
+- ✅ **Independent JAR file** (`/var/lib/ipquorum/<name>/ip_quorum.jar`)
+- ✅ **Dedicated logs** (`/var/log/ipquorum/<name>/`)
+- ✅ **Systemd service** (`ipquorum@<name>.service`)
+
+📖 **[Complete Multi-Instance Guide](ipquorum-systemd/multi-instance/README-MULTI-INSTANCE.md)**
 
 ---
 
-### 2. 🔧 Manual Systemd Service
+## 📥 Automatic JAR Download - Go-Powered
 
-**Features:**
-- ⚙️ Full control over configuration
-- 📝 Manual JAR placement
-- 🔒 Custom security settings
-- 🎛️ Flexible for specific requirements
+The installer includes a **Go-based download tool** that automatically fetches the IP Quorum JAR from your Storage Virtualize system via REST API.
 
+### Why Go?
 
+| Feature | Go (Default) | Python | Bash |
+|---------|-------------|--------|------|
+| **Dependencies** | ✅ None | ⚠️ Python 3.8+ | ⚠️ curl, jq |
+| **Performance** | ✅ <10ms startup | ✅ ~100ms | ✅ Fast |
+| **Memory** | ✅ <20MB | ⚠️ ~50MB | ✅ Low |
+| **Cross-Platform** | ✅ Linux/macOS/Windows | ✅ Yes | ⚠️ Linux/macOS |
+| **Single Binary** | ✅ Yes | ❌ No | ❌ No |
 
-📖 **[Complete Guide: Manual Systemd Configuration](ipquorum-systemd/manual-config/readme-ipquorum-systemd.md)**
+### Download Tool Features
 
----
+- ✅ **Automatic authentication** with retry logic
+- ✅ **Create Quorum Apps** for PBHA configurations
+- ✅ **Secure password handling** (prompt, file, or environment)
+- ✅ **TLS configuration** (insecure by default, secure option available)
+- ✅ **Smart error handling** with detailed diagnostics
 
-### 3. 🐳 Container Deployment (Podman/Docker)
+### Manual Download Example
 
-**Features:**
-- 🚢 Runs in isolated container
-- 📦 Portable across environments
-- 🔄 Easy to replicate
-- 🛡️ Container-level security
-
-
-📖 **[Complete Guide: Container Deployment](ipquorum-container/ibm-virtualize-ipquorum-container.md)**
-
----
-
-## 📥 Downloading the IP Quorum JAR File through RestAPI calls
-
-Starting with **IBM Storage Virtualize Code 8.6.1**, you can download the IP Quorum application using the REST API. Choose the method that best fits your needs:
-
-### Comparison of Download Tools
-
-| Feature | **Go (Recommended)** | Python | Bash | Manual |
-|---------|---------------------|--------|------|--------|
-| **Single Binary** | ✅ Yes | ❌ No | ❌ No | ❌ No |
-| **Dependencies** | ✅ None | ⚠️ Python 3.8+ | ⚠️ curl, jq | ⚠️ curl, jq |
-| **Cross-Platform** | ✅ Linux/macOS/Windows | ✅ Linux/macOS/Windows | ⚠️ Linux/macOS | ⚠️ Linux/macOS |
-| **Performance** | ✅ Excellent (<10ms startup) | ✅ Good (~100ms startup) | ✅ Good | ⚠️ Manual |
-| **Memory Usage** | ✅ <20MB | ⚠️ ~50MB | ✅ Low | N/A |
-| **Type Safety** | ✅ Compile-time | ✅ Runtime | ❌ No | N/A |
-| **Ease of Use** | ✅ Very Easy | ✅ Easy | ✅ Easy | ⚠️ Complex |
-| **Best For** | Production, CI/CD, automation | Development, scripting | Quick scripts | Learning API |
-
----
-
-### 1. 🏆 Go Version (Recommended)
-
-**Why Go?**
-- ✅ **Single binary** - No dependencies, no runtime required
-- ✅ **Fast** - <10ms startup time, <20MB memory
-- ✅ **Cross-platform** - Native binaries for Linux, macOS, Windows
-- ✅ **Production-ready** - Type-safe, concurrent, reliable
-- ✅ **Perfect for CI/CD** - Single file deployment
-
-**Quick Start:**
 ```bash
-# Download and install
-curl -LO https://github.com/olemyk/ibm-storage-virtualize-ipquorum-service/releases/latest/download/ipquorum-download-go-linux-amd64
-chmod +x ipquorum-download-go-linux-amd64
-# Rename binary to 'ipquorum' for easier use
-sudo mv ipquorum-download-go-linux-amd64 /usr/local/bin/ipquorum
-
-# Interactive use (most secure)
-# Note: --insecure is the default behavior (skips TLS verification)
-# Use --secure flag to enable strict TLS verification instead
-ipquorum \
+# Interactive (most secure)
+ipquorum-download \
   --api-endpoint 10.33.7.80 \
-  --mkquorumapp --partnersystem svc_cluster02 \
   --user superuser \
   --pass-prompt \
+  --mkquorumapp --partnersystem svc_cluster02 \
   --download
 
-# Automated use with password file
-echo 'password' > ~/.ipquorum_pass
-chmod 400 ~/.ipquorum_pass
-ipquorum \
+# Automated with password file
+echo 'password' > ~/.ipquorum_pass && chmod 400 ~/.ipquorum_pass
+ipquorum-download \
   --api-endpoint 10.33.7.80 \
-  --mkquorumapp --partnersystem svc_cluster02 \
   --user superuser \
   --pass-file ~/.ipquorum_pass \
   --download
 ```
 
-📖 **[Complete Guide: Go Download Tool](ipquorum-download-go/README.md)**
+📖 **[Go Download Tool Documentation](ipquorum-download-go/README.md)**
 
 ---
 
-### 2. 🐍 Python Version
+## 🔧 Configuration
 
-**Features:**
-- ✅ Cross-platform (Windows, Linux, macOS)
-- ✅ Type-safe with full type hints
-- ✅ Professional logging and error handling
-- ✅ Smart retry logic with exponential backoff
-- ✅ Multiple password input methods
+### Instance Configuration File
 
-**Quick Start:**
+Each instance has a configuration file at `/etc/ipquorum/instances/<name>.conf`:
+
 ```bash
-# Install dependencies
-pip install -r requirements.txt
+# Instance identification
+INSTANCE_NAME=svc_cluster01
+IBM_STORAGE_SYSTEM="Production-SAN"  # Optional, for documentation
 
-# Interactive use (most secure)
-python3 ipquorum-restapi-download.py \
-  --api-endpoint 10.33.7.80 \
-  --mkquorumapp --partnersystem svc_cluster02 \
-  --user superuser \
-  --pass-prompt \
-  --download --insecure
+# API Configuration
+API_ENDPOINT=10.33.7.80
+API_PORT=7443
+VIRTUALIZE_USERNAME=superuser
 
-# Automated use with password file
-echo 'password' > ~/.ipquorum_password
-chmod 400 ~/.ipquorum_password
-python3 ipquorum-restapi-download.py \
-  --api-endpoint 10.33.7.80 \
-  --mkquorumapp --partnersystem svc_cluster02 \
-  --user superuser \
-  --pass-file ~/.ipquorum_password \
-  --download --insecure
+# Download settings
+DOWNLOADIPQ=yes
+DOWNLOAD_TOOL=go  # or python, bash
+
+# Quorum App creation (for PBHA)
+mkquorumapp=yes
+partnersystem=svc_cluster02
+ip6=false
+partnerip6=false
+nometadata=false
+
+# Security
+insecure_api=--insecure  # Use --secure for production with valid certs
 ```
 
-📖 **[Complete Guide: Python Download Tool](ipquorum-download/python-version/README.md)**
+### Password Management
 
----
-
-### 3. 🔧 Bash Version
-
-**Features:**
-- ✅ Simple and lightweight
-- ✅ No Python required
-- ✅ Works on any Linux/Unix system
-- ✅ Easy to understand and modify
-
-**Quick Start:**
 ```bash
-# Make executable
-chmod +x ipquorum-restapi-download.sh
-
-# Download JAR only
-./ipquorum-restapi-download.sh \
-  --api-endpoint 10.33.7.80 \
-  --no-mkquorumapp --download \
-  --user superuser --pass password \
-  --insecure
-
-# Create Quorum App + Download
-./ipquorum-restapi-download.sh \
-  --api-endpoint 10.33.7.80 \
-  --mkquorumapp --partnersystem svc_cluster02 \
-  --download --insecure \
-  --user superuser --pass password
+# Set password securely
+echo 'your_password' | sudo tee /var/lib/ipquorum/svc_cluster01/.password > /dev/null
+sudo chmod 400 /var/lib/ipquorum/svc_cluster01/.password
+sudo chown root:root /var/lib/ipquorum/svc_cluster01/.password
 ```
 
-📖 **[Complete Guide: Bash Download Script](ipquorum-download/bash-version/README.md)**
-
 ---
 
-### 4. 📖 Manual Download (curl)
+## 📊 Monitoring & Troubleshooting
 
-**For learning the API or custom automation:**
+### Check Service Status
 
 ```bash
-# 1. Authenticate
-export VIP="10.33.7.80"
-export VUSERNAME="superuser"
-export VPASSWORD="password"
+# Instance status
+sudo ipqm status svc_cluster01
 
-AUTH_RESPONSE=$(curl -ks -X POST "https://${VIP}:7443/rest/v1/auth" \
-  -H "accept: application/json" \
-  -H "X-Auth-Username: ${VUSERNAME}" \
-  -H "X-Auth-Password: ${VPASSWORD}" \
-  -d "")
+# Systemd status
+sudo systemctl status ipquorum@svc_cluster01
 
-TOKEN=$(echo "${AUTH_RESPONSE}" | jq -r '.token // .X_Auth_Token // .authToken // empty')
-
-# 2. Create new IP Quorum app (optional)
-curl -ks -X POST "https://${VIP}:7443/rest/v1/mkquorumapp" \
-  -H "accept: application/json" \
-  -H "X-Auth-Token: ${TOKEN}" \
-  -H "Content-Type: application/json" \
-  -d '{"ip_6": false, "nometadata": false, "partnersystem": "svc_cluster02", "partnerip6": false}'
-
-# 3. Download JAR file
-curl -ks -X POST "https://${VIP}:7443/rest/v1/download" \
-  -H "accept: application/json" \
-  -H "X-Auth-Token: ${TOKEN}" \
-  -H "Content-Type: application/json" \
-  -d '{"prefix":"/dumps","filename":"ip_quorum.jar"}' \
-  --output ip_quorum.jar
-```
-
-📖 **[Complete Guide: Manual Download with curl](ipquorum-download/ipquorum-download-readme.md)**
-
----
-
-## 💡 Tips and Tricks
-
-### Security Best Practices
-- ✅ Use `--pass-prompt` for interactive password entry (most secure)
-- ✅ Use password files with `chmod 400` for automation
-- ✅ Never use `--pass` with password in command line for production
-- ✅ Use `--secure` flag in production if you have valid TLS certificates
-- ✅ Run services with dedicated user accounts (not root)
-
-### Monitoring
-```bash
-# Check service status
-sudo systemctl status ipquorum
-
-# View real-time logs
-sudo journalctl -u ipquorum -f
+# View logs
+sudo ipqm logs svc_cluster01 -f
+sudo journalctl -u ipquorum@svc_cluster01 -f
 
 # Check from Storage Virtualize
 ssh superuser@YOUR_SV_IP
 lsquorum
 ```
 
-### Troubleshooting
-```bash
-# Test connectivity
-curl -k https://YOUR_API_ENDPOINT:7443/rest/v1/auth
+### Troubleshooting Tools
 
+```bash
+# Validate instance configuration
+sudo /usr/local/bin/ipquorum-validate-multi.sh svc_cluster01
+
+# Fix permissions
+sudo /usr/local/bin/fix-permissions.sh svc_cluster01
+
+# Diagnose SELinux issues
+sudo /usr/local/bin/diagnose-selinux.sh svc_cluster01
+
+# Fix SELinux contexts
+sudo /usr/local/bin/fix-selinux.sh svc_cluster01
+```
+
+### Common Issues
+
+**Connection refused:**
+```bash
 # Check firewall
 sudo firewall-cmd --list-ports
 sudo firewall-cmd --add-port=1260/tcp --permanent
+sudo firewall-cmd --reload
+```
 
-# Verify Java
-java -version
+**Authentication failed:**
+```bash
+# Verify credentials
+cat /var/lib/ipquorum/svc_cluster01/.password
+# Check user role on Storage Virtualize
+ssh superuser@YOUR_SV_IP "lsuser superuser"
+```
 
-# Check JAR file
-ls -l /opt/IBM/ip-quorum/ip_quorum.jar
+**JAR download fails:**
+```bash
+# Test API connectivity
+curl -k https://YOUR_API_ENDPOINT:7443/rest/v1/auth
+# Check download tool
+ipquorum-download --help
 ```
 
 ---
 
-## 📚 Additional Resources
+## 🔒 Security Best Practices
 
-### IBM Documentation
-- [IPQuorum Info](https://www.ibm.com/support/pages/ibm-storage-virtualize-ip-quorum-application-requirements-1)
-- [IP quorum application](https://www.ibm.com/docs/en/flashsystem-9x00/9.1.1?topic=quorum-ip-application)
-- [Storage Virtualize RESTful API](https://www.ibm.com/docs/en/flashsystem-9x00/9.1.1?topic=interface-storage-virtualize-restful-api)
+### Password Security
+- ✅ Use `--pass-prompt` for interactive password entry
+- ✅ Use password files with `chmod 400` for automation
+- ❌ Never use `--pass` with password in command line
+- ✅ Store passwords in `/var/lib/ipquorum/<instance>/.password`
 
-### Repository Documentation
-- [Architecture Overview](ipquorum-systemd/ARCHITECTURE.md)
-- [Changelog](ipquorum-systemd/CHANGELOG.md)
-- [Security Guide](ipquorum-download/python-version/SECURITY-GUIDE.md)
+### TLS Configuration
+- ✅ Use `--secure` flag in production with valid certificates
+- ⚠️ `--insecure` is default for self-signed certificates
+- ✅ Verify certificates when possible
+
+### Service Hardening
+- ✅ Runs as dedicated `ipquorum` user (not root)
+- ✅ Systemd security features enabled
+- ✅ SELinux contexts properly configured
+- ✅ File permissions restricted (400 for passwords, 600 for configs)
+
+---
+
+## 📚 Documentation
+
+### Deployment Guides
+- **[Multi-Instance Service](ipquorum-systemd/multi-instance/README-MULTI-INSTANCE.md)** - Complete guide (recommended)
+- **[Deployment Guide](DEPLOYMENT-GUIDE.md)** - Distribution and packaging options
+- **[Architecture Overview](ipquorum-systemd/ARCHITECTURE.md)** - System design and components
+
+### Download Tools
+- **[Go Download Tool](ipquorum-download-go/README.md)** - Recommended, single binary
+- **[Python Download Tool](ipquorum-download/python-version/README.md)** - Feature-rich alternative
+- **[Bash Download Script](ipquorum-download/bash-version/README.md)** - Lightweight option
+
+### Additional Resources
+- **[Security Guide](ipquorum-download/python-version/SECURITY-GUIDE.md)** - Best practices
+- **[Changelog](ipquorum-systemd/CHANGELOG.md)** - Version history
+- **[IBM Documentation](https://www.ibm.com/docs/en/flashsystem-9x00/9.1.1?topic=quorum-ip-application)** - Official docs
+
+---
+
+## 🎯 Use Cases
+
+### Single Storage System
+```bash
+# Simple setup for one storage system
+sudo ipqm create production
+# Configure and start
+sudo ipqm enable production
+sudo ipqm start production
+```
+
+### Multiple Storage Systems
+```bash
+# Create instances for each system
+sudo ipqm create datacenter-a
+sudo ipqm create datacenter-b
+sudo ipqm create dr-site
+
+# Start all instances
+sudo systemctl start ipquorum@{datacenter-a,datacenter-b,dr-site}
+```
+
+### PBHA (PowerHA) Configuration
+```bash
+# Create Quorum App for partner system
+sudo ipqm create svc_cluster01
+# Edit config to set partnersystem=svc_cluster02
+sudo vi /etc/ipquorum/instances/svc_cluster01.conf
+# Start with mkquorumapp enabled
+sudo ipqm start svc_cluster01
+```
 
 ---
 
@@ -340,8 +405,16 @@ Contributions are welcome! Please submit issues or pull requests to improve this
 
 ## 👤 Maintainer
 
-Ole Kristian Myklebust
+**Ole Kristian Myklebust**
+
+---
+
+## 📄 License
+
+See LICENSE file for details.
 
 ---
 
 **Made with ❤️ for IBM Storage Virtualize**
+
+*Automate your IP Quorum deployment today!*

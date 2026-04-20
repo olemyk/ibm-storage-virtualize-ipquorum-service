@@ -1,18 +1,40 @@
 #!/usr/bin/env bash
 #
-# IBM Storage Virtualize IP Quorum Download Script
+# IBM Storage Virtualize IP Quorum Download Script (Multi-Instance)
 # This script is called by the systemd service to download ip_quorum.jar
 # before starting the IP Quorum service.
 #
-# Configuration is read from /etc/ipquorum/ipquorum.conf
+# Usage: ipquorum-download-multi.sh <instance-name>
+#
+# Configuration is read from /etc/ipquorum/instances/<instance-name>.conf
 #
 
 set -euo pipefail
 
-# Default configuration
-IPQUORUM_DIR="${IPQUORUM_DIR:-/opt/IBM/ip-quorum}"
+# Get instance name from command line argument
+INSTANCE_NAME="${1:-}"
+
+if [[ -z "$INSTANCE_NAME" ]]; then
+    echo "ERROR: Instance name is required" >&2
+    echo "Usage: $0 <instance-name>" >&2
+    exit 1
+fi
+
+# Source instance-specific configuration
+INSTANCE_CONF="/etc/ipquorum/instances/${INSTANCE_NAME}.conf"
+
+if [[ ! -f "$INSTANCE_CONF" ]]; then
+    echo "ERROR: Instance configuration not found: ${INSTANCE_CONF}" >&2
+    exit 1
+fi
+
+# Source the configuration
+source "$INSTANCE_CONF"
+
+# Default configuration (if not set in instance config)
+IPQUORUM_DIR="${IPQUORUM_DIR:-/var/lib/ipquorum/${INSTANCE_NAME}}"
 IPQUORUM_JAR="${IPQUORUM_JAR:-${IPQUORUM_DIR}/ip_quorum.jar}"
-IPQUORUM_LOG_DIR="${IPQUORUM_LOG_DIR:-${IPQUORUM_DIR}/log}"
+IPQUORUM_LOG_DIR="${IPQUORUM_LOG_DIR:-/var/log/ipquorum/${INSTANCE_NAME}}"
 IPQUORUM_DOWNLOAD_ENABLED="${IPQUORUM_DOWNLOAD_ENABLED:-false}"
 IPQUORUM_DOWNLOAD_TOOL="${IPQUORUM_DOWNLOAD_TOOL:-go}"
 IPQUORUM_BACKUP_ENABLED="${IPQUORUM_BACKUP_ENABLED:-true}"
@@ -20,7 +42,7 @@ IPQUORUM_BACKUP_ENABLED="${IPQUORUM_BACKUP_ENABLED:-true}"
 # API Configuration
 API_ENDPOINT="${API_ENDPOINT:-}"
 VIRTUALIZE_USERNAME="${VIRTUALIZE_USERNAME:-}"
-VIRTUALIZE_PASSWORD_FILE="${VIRTUALIZE_PASSWORD_FILE:-/etc/ipquorum/.password}"
+VIRTUALIZE_PASSWORD_FILE="${VIRTUALIZE_PASSWORD_FILE:-/etc/ipquorum/instances/.passwords/${INSTANCE_NAME}.password}"
 
 # mkquorumapp Configuration
 IPQUORUM_MKQUORUMAPP_ENABLED="${IPQUORUM_MKQUORUMAPP_ENABLED:-false}"
@@ -40,11 +62,14 @@ DOWNLOAD_TOOL_BASH="${DOWNLOAD_TOOL_BASH:-/usr/local/bin/ipquorum-restapi-downlo
 # Logging
 LOG_FILE="${IPQUORUM_LOG_DIR}/download.log"
 
+# Ensure log directory exists
+mkdir -p "$IPQUORUM_LOG_DIR" 2>/dev/null || true
+
 # Function to log messages
 log() {
     local level="$1"
     shift
-    local msg="[$(date '+%Y-%m-%d %H:%M:%S')] [$level] $*"
+    local msg="[$(date '+%Y-%m-%d %H:%M:%S')] [${INSTANCE_NAME}] [$level] $*"
     
     # Try to write to log file, fallback to stdout only if it fails
     if echo "$msg" >> "$LOG_FILE" 2>/dev/null; then
@@ -85,9 +110,34 @@ restore_backup() {
 download_with_go() {
     log "INFO" "Downloading using Go binary: ${DOWNLOAD_TOOL_GO}"
     
+    # Check if the specified path exists and is executable
     if [[ ! -x "$DOWNLOAD_TOOL_GO" ]]; then
-        log "ERROR" "Go download tool not found or not executable: ${DOWNLOAD_TOOL_GO}"
-        return 1
+        log "WARN" "Go download tool not found at: ${DOWNLOAD_TOOL_GO}"
+        
+        # Try to find alternative Go binary names in common locations
+        local alt_paths=(
+            "/usr/local/bin/ipquorum-download-go-linux-amd64"
+            "./ipquorum-download-go-linux-amd64"
+            "./ipquorum-download-go"
+            "/usr/local/bin/ipquorum-download-go"
+        )
+        
+        local found=false
+        for alt_path in "${alt_paths[@]}"; do
+            if [[ -x "$alt_path" ]]; then
+                log "INFO" "Found alternative Go binary at: ${alt_path}"
+                DOWNLOAD_TOOL_GO="$alt_path"
+                found=true
+                break
+            fi
+        done
+        
+        if [[ "$found" == "false" ]]; then
+            log "ERROR" "Go download tool not found or not executable"
+            log "ERROR" "Tried: ${DOWNLOAD_TOOL_GO} and alternatives"
+            log "ERROR" "Please install the Go downloader or set DOWNLOAD_TOOL_GO in config"
+            return 1
+        fi
     fi
     
     # Build command with base options
@@ -209,7 +259,8 @@ download_with_bash() {
 
 # Main execution
 main() {
-    log "INFO" "=== IP Quorum Download Script Started ==="
+    log "INFO" "=== IP Quorum Download Script Started for Instance: ${INSTANCE_NAME} ==="
+    log "INFO" "IBM Storage System: ${IBM_STORAGE_SYSTEM:-Unknown}"
     
     # Check if download is enabled
     if [[ "${IPQUORUM_DOWNLOAD_ENABLED}" != "true" ]]; then
@@ -229,12 +280,12 @@ main() {
     
     # Validate configuration
     if [[ -z "$API_ENDPOINT" ]]; then
-        log "ERROR" "API_ENDPOINT is not configured"
+        log "ERROR" "API_ENDPOINT is not configured in ${INSTANCE_CONF}"
         exit 1
     fi
     
     if [[ -z "$VIRTUALIZE_USERNAME" ]]; then
-        log "ERROR" "VIRTUALIZE_USERNAME is not configured"
+        log "ERROR" "VIRTUALIZE_USERNAME is not configured in ${INSTANCE_CONF}"
         exit 1
     fi
     
@@ -265,7 +316,7 @@ main() {
         
         if [[ -z "${IPQUORUM_PARTNERSYSTEM}" ]]; then
             log "ERROR" "IPQUORUM_PARTNERSYSTEM is required when IPQUORUM_MKQUORUMAPP_ENABLED=true"
-            log "ERROR" "Please set IPQUORUM_PARTNERSYSTEM in /etc/ipquorum/ipquorum.conf"
+            log "ERROR" "Please set IPQUORUM_PARTNERSYSTEM in ${INSTANCE_CONF}"
             exit 1
         fi
         
@@ -291,6 +342,9 @@ main() {
         exit 1
     fi
     log "INFO" "TLS verification: ${IPQUORUM_TLS_VERIFY}"
+    
+    # Ensure instance directory exists
+    mkdir -p "$IPQUORUM_DIR" 2>/dev/null || true
     
     # Create backup if enabled
     if [[ "${IPQUORUM_BACKUP_ENABLED}" == "true" ]]; then
@@ -357,11 +411,13 @@ main() {
     fi
     chmod 644 "$IPQUORUM_JAR"
     
-    log "INFO" "=== Download Script Completed Successfully ==="
+    log "INFO" "=== Download Script Completed Successfully for Instance: ${INSTANCE_NAME} ==="
     exit 0
 }
 
 # Run main function
 main "$@"
 
-# Made with help from Bob
+# 
+
+# 

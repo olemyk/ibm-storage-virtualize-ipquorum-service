@@ -2,6 +2,255 @@
 
 All notable changes to the IP Quorum systemd service will be documented in this file.
 
+## [2.0.1] - 2026-04-20 - Major Multi-Instance Architecture Update
+
+### 🎉 Major Features
+
+#### Complete Multi-Instance Architecture
+- **Multi-instance systemd service** - Run multiple independent IP Quorum instances on a single host
+  - Template-based systemd unit (`ipquorum@.service`)
+  - Instance-specific configurations in `/etc/ipquorum/instances/`
+  - Isolated JAR files, logs, and credentials per instance
+  - Independent lifecycle management (start/stop/restart per instance)
+- **Instance Manager CLI** - Comprehensive management tool (`ipquorum-instance-manager.sh`)
+  - Interactive instance creation with guided prompts
+  - List all instances with status and configuration
+  - Start, stop, restart, enable, disable instances
+  - View logs and status for specific instances
+  - Delete instances with safety confirmations
+- **Automated Installation** - Complete rewrite of installer
+  - Intelligent Go binary detection (multiple naming patterns)
+  - Local and remote download options for Go binaries
+  - Custom URL support for enterprise environments
+  - Automatic directory structure creation
+  - SELinux context configuration
+  - Systemd service installation and reload
+
+#### Enhanced Documentation
+- **Complete README overhaul** with ASCII banner logo
+  - Multi-instance architecture emphasis
+  - Split-brain prevention diagram
+  - Automation-first approach
+  - Clear separation of service vs. download tools
+- **New DEPLOYMENT-GUIDE.md** - Comprehensive deployment documentation
+  - Component architecture explanation
+  - Service startup flow diagrams
+  - Directory structure documentation
+  - Multiple use case examples (PBHA, multi-system, DR)
+- **RELEASE-INSTRUCTIONS.md** - GitHub release workflow documentation
+  - Go binary release process
+  - Version naming conventions (`go-v*.*.*`)
+  - Integration with main service package
+
+#### Security & Licensing
+- **Apache 2.0 License** - Added open source license to project root
+- **Enhanced security** - Improved credential handling
+  - Password files per instance in `/var/lib/ipquorum/<instance>/`
+  - Secure file permissions (400/600)
+  - SELinux context support
+  - No passwords in configuration files
+
+### 🔧 Improvements
+
+#### Installer Enhancements
+- **Fixed ANSI color code rendering** - Added `-e` flag to echo commands (line 515)
+- **Go binary auto-detection** - Searches for multiple naming patterns:
+  - `ipquorum-download-go`
+  - `ipquorum-download-go-linux-amd64`
+  - `ipquorum-download-go-linux-arm64`
+  - Architecture-specific variants
+- **Script path detection** - Automatically finds scripts in `systemd/` subdirectory
+- **Local binary installation** - Improved detection in `ipquorum-downloader/` directory
+- **Custom URL support** - Download Go binaries from custom URLs
+- **Better error messages** - Clear guidance on missing dependencies
+
+#### Instance Manager Improvements
+- **Clarified prompts** - Updated IBM_STORAGE_SYSTEM prompt to state it's for documentation only
+- **Hidden placeholder values** - List command shows "N/A" instead of `<HOSTNAME_OR_IP>`
+- **Full path usage** - Resolves sudo PATH issues with absolute paths
+- **Permanent alias suggestions** - Shows how to add aliases to shell profile
+- **Interactive validation** - Validates configuration during creation
+- **Status integration** - Shows systemd status in list output
+
+#### Configuration Updates
+- **Updated instance.conf.template** - Clarified IBM_STORAGE_SYSTEM field (lines 23-28)
+  - "OPTIONAL - for documentation/identification only"
+  - "Not used for connectivity - API_ENDPOINT is used instead"
+- **Example configurations** - Updated all examples with clear comments
+- **Validation improvements** - Better detection of placeholder values
+
+### 📦 New Files & Structure
+
+#### Core Service Files
+- `ipquorum-systemd/multi-instance/ipquorum@.service` - Template systemd unit
+- `ipquorum-systemd/multi-instance/ipquorum-instance-manager.sh` - Instance management CLI
+- `ipquorum-systemd/multi-instance/install-ipquorum-service.sh` - Automated installer
+- `ipquorum-systemd/multi-instance/instance.conf.template` - Configuration template
+
+#### Supporting Scripts
+- `ipquorum-systemd/multi-instance/ipquorum-start-multi.sh` - Instance startup script
+- `ipquorum-systemd/multi-instance/ipquorum-download-multi.sh` - Download script
+- `ipquorum-systemd/multi-instance/ipquorum-validate-multi.sh` - Validation script
+
+#### Troubleshooting Tools
+- `ipquorum-systemd/multi-instance/troubleshoot-tools/diagnose-selinux.sh`
+- `ipquorum-systemd/multi-instance/troubleshoot-tools/fix-selinux.sh`
+- `ipquorum-systemd/multi-instance/troubleshoot-tools/fix-permissions.sh`
+
+#### Example Configurations
+- `ipquorum-systemd/multi-instance/examples/system1.conf`
+- `ipquorum-systemd/multi-instance/examples/datacenter-a.conf`
+- `ipquorum-systemd/multi-instance/examples/partition-prod.conf`
+
+#### Documentation
+- `LICENSE` - Apache 2.0 license
+- `readme.md` - Complete rewrite with multi-instance focus
+- `ipquorum-systemd/multi-instance/DEPLOYMENT-GUIDE.md`
+- `ipquorum-download-go/RELEASE-INSTRUCTIONS.md`
+
+#### Archive Structure
+- `archive/` - Deprecated single-instance components
+- `archive/README.md` - Deprecation notice and migration guide
+- `ipquorum-systemd/DEPRECATION-NOTICE.md`
+
+### 🐛 Bug Fixes
+
+- **Fixed ANSI color codes** - Colors now render properly in installer output
+- **Fixed sudo PATH issues** - Scripts use absolute paths
+- **Fixed Go binary detection** - Handles multiple naming patterns
+- **Fixed script path detection** - Works from any directory
+- **Fixed placeholder validation** - Better detection of unconfigured values
+- **Fixed SELinux contexts** - Proper labeling for all directories
+
+### 📊 Architecture Changes
+
+#### Directory Structure
+```
+/etc/ipquorum/
+├── instances/
+│   ├── system1.conf
+│   ├── system2.conf
+│   └── datacenter-a.conf
+└── ipquorum@.service (symlink)
+
+/var/lib/ipquorum/
+├── system1/
+│   ├── ip_quorum.jar
+│   ├── .password
+│   └── logs/
+├── system2/
+│   └── ...
+└── datacenter-a/
+    └── ...
+
+/usr/local/bin/
+├── ipquorum-instance-manager.sh
+├── ipquorum-start-multi.sh
+├── ipquorum-download-multi.sh
+└── ipquorum-validate-multi.sh
+```
+
+#### Service Management
+```bash
+# Old (single instance)
+systemctl start ipquorum
+
+# New (multi-instance)
+systemctl start ipquorum@system1
+systemctl start ipquorum@system2
+systemctl start ipquorum@datacenter-a
+
+# Or use instance manager
+ipquorum-instance-manager.sh start system1
+```
+
+### 🚀 Use Cases
+
+#### Multiple Storage Systems
+Run separate IP Quorum instances for different IBM Storage Virtualize clusters:
+```bash
+ipquorum-instance-manager.sh create svc_cluster01
+ipquorum-instance-manager.sh create svc_cluster02
+ipquorum-instance-manager.sh create flashsystem_prod
+```
+
+#### Partner-Based High Availability (PBHA)
+Configure quorum for stretched cluster configurations:
+```bash
+ipquorum-instance-manager.sh create datacenter-a
+ipquorum-instance-manager.sh create datacenter-b
+```
+
+#### Production + DR Environments
+Separate instances for production and disaster recovery:
+```bash
+ipquorum-instance-manager.sh create prod-primary
+ipquorum-instance-manager.sh create dr-secondary
+```
+
+### 🔄 Migration from v2.0.0
+
+#### Automated Migration
+The new installer preserves existing single-instance configurations:
+1. Detects existing `/etc/ipquorum/ipquorum.conf`
+2. Creates backup in `/etc/ipquorum/backup/`
+3. Migrates to multi-instance as `default` instance
+4. Preserves all settings and credentials
+
+#### Manual Migration
+```bash
+# 1. Install new multi-instance system
+sudo ./install-ipquorum-service.sh
+
+# 2. Create instance from old config
+sudo ipquorum-instance-manager.sh create system1
+
+# 3. Stop old service
+sudo systemctl stop ipquorum-old
+sudo systemctl disable ipquorum-old
+
+# 4. Start new instance
+sudo ipquorum-instance-manager.sh start system1
+```
+
+### ⚠️ Breaking Changes
+
+- **Configuration location changed** - Now in `/etc/ipquorum/instances/`
+- **Service name changed** - Use `ipquorum@<instance>` instead of `ipquorum`
+- **JAR location changed** - Now in `/var/lib/ipquorum/<instance>/`
+- **Log location changed** - Now in `/var/lib/ipquorum/<instance>/logs/`
+- **Password file location changed** - Now in `/var/lib/ipquorum/<instance>/`
+
+### 📈 Performance & Reliability
+
+- **Isolated instances** - Failures in one instance don't affect others
+- **Independent restarts** - Restart policies per instance
+- **Resource limits** - CPU and memory limits per instance
+- **Better logging** - Separate logs per instance
+- **Health monitoring** - Status checks per instance
+
+### 🔮 Future Enhancements
+
+Planned for v2.1.0:
+- [ ] Web UI for instance management
+- [ ] Prometheus metrics per instance
+- [ ] Automated health checks with alerting
+- [ ] Ansible playbook for deployment
+- [ ] Container/Kubernetes support
+- [ ] Backup and restore functionality
+- [ ] Configuration validation tool
+- [ ] Performance monitoring dashboard
+
+### 🤝 Contributing
+
+This release includes contributions and testing feedback from production deployments on RHEL 9.4.
+
+### 📄 License
+
+This project is now licensed under Apache License 2.0. See LICENSE file for details.
+
+---
+
 ## [2.0.0] - 2026-02-01 - Initial Release with Automation
 
 ### ✨ New Features
