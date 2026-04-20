@@ -106,7 +106,7 @@ jobs:
           cp ipquorum-systemd/multi-instance/troubleshoot-tools/*.sh "${RELEASE_DIR}/systemd/troubleshoot-tools/"
           
           # Make scripts executable
-          chmod +x "${RELEASE_DIR}/install-multi-instance.sh"
+          chmod +x "${RELEASE_DIR}/install-ipquorum-service.sh"
           chmod +x "${RELEASE_DIR}/systemd/"*.sh
           chmod +x "${RELEASE_DIR}/systemd/troubleshoot-tools/"*.sh
           
@@ -116,6 +116,10 @@ jobs:
           cp ipquorum-systemd/multi-instance/QUICK-REFERENCE.md "${RELEASE_DIR}/docs/"
           cp ipquorum-systemd/multi-instance/IMPLEMENTATION-SUMMARY.md "${RELEASE_DIR}/docs/"
           cp ipquorum-systemd/multi-instance/RESOURCE-LIMITS.md "${RELEASE_DIR}/docs/" 2>/dev/null || true
+          
+          # Copy root documentation
+          cp README.md "${RELEASE_DIR}/" 2>/dev/null || true
+          cp CHANGELOG.md "${RELEASE_DIR}/" 2>/dev/null || true
           
           # Create LICENSE file if it doesn't exist
           if [ ! -f LICENSE ]; then
@@ -132,7 +136,7 @@ jobs:
           
           # Generate checksums
           sha256sum "ipquorum-service-${VERSION}.tar.gz" > checksums.txt
-          sha256sum "${RELEASE_DIR}/bin/"* >> checksums.txt
+          find "${RELEASE_DIR}/ipquorum-downloader/" -type f -exec sha256sum {} \; >> checksums.txt
       
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -155,10 +159,11 @@ jobs:
             cd ipquorum-service-${{ github.ref_name }}
             
             # Run installer
-            sudo ./install-multi-instance.sh
+            chmod +x install-ipquorum-service.sh
+            sudo ./install-ipquorum-service.sh
             
             # Create your first instance
-            sudo ./systemd/ipquorum-instance-manager.sh create myinstance
+            sudo ipquorum-instance-manager.sh create myinstance
             
             # Enable and start
             sudo systemctl enable --now ipquorum@myinstance.service
