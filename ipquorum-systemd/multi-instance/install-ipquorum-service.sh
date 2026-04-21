@@ -268,24 +268,40 @@ main() {
                 esac
                 
                 if [[ -n "$ARCH" ]]; then
-                    DOWNLOAD_URL="https://github.com/olemyk/ibm-storage-virtualize-ipquorum-service/releases/latest/download/ipquorum-download-go-linux-${ARCH}"
-                    
-                    print_info "Downloading from: $DOWNLOAD_URL"
+                    # Get latest version from GitHub API
+                    print_info "Fetching latest version from GitHub..."
                     if command_exists curl; then
-                        curl -L -o /usr/local/bin/ipquorum-download-go "$DOWNLOAD_URL"
+                        LATEST_VERSION=$(curl -s https://api.github.com/repos/olemyk/ibm-storage-virtualize-ipquorum-service/releases/latest | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
                     elif command_exists wget; then
-                        wget -O /usr/local/bin/ipquorum-download-go "$DOWNLOAD_URL"
+                        LATEST_VERSION=$(wget -qO- https://api.github.com/repos/olemyk/ibm-storage-virtualize-ipquorum-service/releases/latest | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
                     else
                         print_error "Neither curl nor wget found. Cannot download."
                         print_info "Please install curl or wget and try again."
+                        LATEST_VERSION=""
                     fi
                     
-                    if [[ -f "/usr/local/bin/ipquorum-download-go" ]]; then
-                        chmod 755 /usr/local/bin/ipquorum-download-go
-                        print_success "ipquorum-download-go installed successfully"
-                        DOWNLOAD_TOOLS_FOUND=$((DOWNLOAD_TOOLS_FOUND + 1))
+                    if [[ -z "$LATEST_VERSION" ]]; then
+                        print_error "Failed to fetch latest version from GitHub API"
+                        print_info "Please install manually from: https://github.com/olemyk/ibm-storage-virtualize-ipquorum-service/releases"
                     else
-                        print_error "Download failed"
+                        DOWNLOAD_URL="https://github.com/olemyk/ibm-storage-virtualize-ipquorum-service/releases/download/v${LATEST_VERSION}/ipquorum-download-go-linux-${ARCH}"
+                        
+                        print_info "Latest version: v${LATEST_VERSION}"
+                        print_info "Downloading from: $DOWNLOAD_URL"
+                        
+                        if command_exists curl; then
+                            curl -fsSL -o /usr/local/bin/ipquorum-download-go "$DOWNLOAD_URL"
+                        elif command_exists wget; then
+                            wget -q -O /usr/local/bin/ipquorum-download-go "$DOWNLOAD_URL"
+                        fi
+                        
+                        if [[ -f "/usr/local/bin/ipquorum-download-go" ]]; then
+                            chmod 755 /usr/local/bin/ipquorum-download-go
+                            print_success "ipquorum-download-go v${LATEST_VERSION} installed successfully"
+                            DOWNLOAD_TOOLS_FOUND=$((DOWNLOAD_TOOLS_FOUND + 1))
+                        else
+                            print_error "Download failed"
+                        fi
                     fi
                 fi
                 ;;

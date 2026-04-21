@@ -2,6 +2,109 @@
 
 All notable changes to the IP Quorum systemd service will be documented in this file.
 
+## [2.0.4] - 2026-04-21 - Go Binary Standalone Releases
+
+### 🚀 New Features
+
+#### Standalone Go Binary Downloads
+- **Go binaries as separate release assets** - Download individual binaries without the full tarball
+- **Direct binary downloads** - Each platform binary available as standalone asset
+- **Individual SHA256 checksums** - Each binary has its own `.sha256` checksum file
+- **Automatic version detection** - Installer uses GitHub API to fetch latest version
+
+#### Installer Improvements
+- **GitHub API integration** - Automatically detects and downloads latest version
+- **Improved error handling** - Better feedback when downloads fail
+- **Version-specific URLs** - Uses `/releases/download/v{VERSION}/` instead of `/latest/download/`
+- **Fallback support** - Works with both curl and wget
+
+### 🔧 Technical Changes
+
+#### Release Workflow
+- Go binaries now uploaded as individual release assets
+- Binaries included in both tarball and as standalone downloads
+- Individual checksum files generated for each binary
+- Improved asset organization in releases
+
+#### Download URLs
+**Old (broken):**
+```bash
+# This returns 404 because filename includes version
+https://github.com/.../releases/latest/download/ipquorum-download-go-linux-amd64
+```
+
+**New (working):**
+```bash
+# Get latest version via API
+LATEST_VERSION=$(curl -s https://api.github.com/repos/olemyk/ibm-storage-virtualize-ipquorum-service/releases/latest | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
+
+# Download with version-specific URL
+curl -fsSL "https://github.com/.../releases/download/v${LATEST_VERSION}/ipquorum-download-go-linux-amd64" -o ipquorum-download-go
+```
+
+### 📦 Available Binaries
+
+Each release now includes standalone downloads for:
+- `ipquorum-download-go-linux-amd64` (+ `.sha256`)
+- `ipquorum-download-go-linux-arm64` (+ `.sha256`)
+- `ipquorum-download-go-darwin-amd64` (+ `.sha256`)
+- `ipquorum-download-go-darwin-arm64` (+ `.sha256`)
+
+### 💡 Usage Examples
+
+**Download latest binary automatically:**
+```bash
+LATEST_VERSION=$(curl -s https://api.github.com/repos/olemyk/ibm-storage-virtualize-ipquorum-service/releases/latest | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
+curl -fsSL "https://github.com/olemyk/ibm-storage-virtualize-ipquorum-service/releases/download/v${LATEST_VERSION}/ipquorum-download-go-linux-amd64" -o ipquorum-download-go
+chmod +x ipquorum-download-go
+sudo mv ipquorum-download-go /usr/local/bin/
+```
+
+**Verify checksum:**
+```bash
+curl -fsSL "https://github.com/olemyk/ibm-storage-virtualize-ipquorum-service/releases/download/v${LATEST_VERSION}/ipquorum-download-go-linux-amd64.sha256" -o ipquorum-download-go.sha256
+sha256sum -c ipquorum-download-go.sha256
+```
+
+### ⚠️ Breaking Changes
+
+None - This is an enhancement release that adds new download options.
+
+---
+
+## [2.0.3] - 2026-04-21 - Release Download Instructions Fix
+
+### 🔧 Improvements
+
+#### Download Instructions
+- **Fixed "latest" download URL** - GitHub doesn't support `/releases/latest/download/` with version-specific filenames
+- **Added GitHub API method** - Uses GitHub API to automatically get latest version number
+- **Updated README.md** - Shows both automatic latest download and specific version download
+- **Updated release body** - Uses `curl -fsSL` and shows actual version in Quick Start
+
+#### GitHub Release Workflow
+- **Dynamic version substitution** - Release body now shows actual version number (e.g., 2.0.3)
+- **Improved heredoc syntax** - Fixed shell script generation for release body
+- **Added ARCHITECTURE.md link** - Included in release documentation links
+
+### 📚 Documentation Updates
+
+**New download methods:**
+```bash
+# Automatic latest version
+LATEST_VERSION=$(curl -s https://api.github.com/repos/olemyk/ibm-storage-virtualize-ipquorum-service/releases/latest | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
+curl -fsSL "https://github.com/olemyk/ibm-storage-virtualize-ipquorum-service/releases/download/v${LATEST_VERSION}/ipquorum-service-${LATEST_VERSION}.tar.gz" -o ipquorum-service-${LATEST_VERSION}.tar.gz
+
+# Or specific version
+curl -fsSL https://github.com/olemyk/ibm-storage-virtualize-ipquorum-service/releases/download/v2.0.3/ipquorum-service-2.0.3.tar.gz -o ipquorum-service-2.0.3.tar.gz
+```
+
+### ⚠️ Breaking Changes
+
+None - This is a documentation fix release.
+
+---
+
 ## [2.0.2] - 2026-04-21 - Documentation and Release Workflow Fixes
 
 ### 📚 Documentation

@@ -1,9 +1,9 @@
-name: Build and Release Go Binary
+name: Build and Release IPQuorum Downloader (Go)
 
 on:
   push:
     tags:
-      - 'v*.*.*'  # Triggers on version tags like v1.0.0, v1.0.1, etc.
+      - 'go-v*.*.*'  # Triggers on Go-specific version tags like go-v1.0.0, go-v1.0.1, etc.
   workflow_dispatch:  # Allows manual trigger
 
 permissions:
@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   build:
-    name: Build Go Binaries
+    name: Build IPQuorum Downloader Go Binaries
     runs-on: ubuntu-latest
     strategy:
       matrix:

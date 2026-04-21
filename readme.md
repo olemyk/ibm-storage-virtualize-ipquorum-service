@@ -1,3 +1,6 @@
+
+
+```
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                              ║
 ║     ██╗██████╗       ██████╗ ██╗   ██╗ ██████╗ ██████╗ ██╗   ██╗███╗   ███╗  ║
@@ -8,8 +11,8 @@
 ║     ╚═╝╚═╝           ╚══▀▀═╝  ╚═════╝  ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝  ║
 ║                                                                              ║
 ║  ┌────────────────────────────────────────────────────────────────────────┐  ║
-║  │  IBM Storage Virtualize High Availability Quorum Service               │  ║
-║  │  Automated Installation • Multi-Instance Support • Go-Powered Download │  ║
+║  │  IBM Storage Virtualize - Quorum Service for High Availability         │  ║
+║  │  Automated Download • Systemd Integration                              │  ║
 ║  └────────────────────────────────────────────────────────────────────────┘  ║
 ║                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
@@ -26,7 +29,7 @@
 - 📥 **Automatic JAR Download** - Go-powered download tool (no dependencies!)
 - 🎯 **Instance Manager** - Easy create, configure, start, stop, and monitor instances
 - 🔒 **Production-Ready Security** - Systemd hardening, SELinux support, secure credentials
-- 📊 **Complete Observability** - Centralized logging, status monitoring, health checks
+
 
 ---
 
@@ -36,19 +39,19 @@
 
 ```
     ┌──────────────────────────────────────────────────────┐
-    │                                                       │
-    │   Site A                    Site B                   │
+    │                                                      │
+    │   Site A Flashsystem        Site B  Flashsystem      │
     │   ┌────┐                    ┌────┐                   │
     │   │ ██ │ ←─────────────────→│ ██ │                   │
-    │   └────┘    Link Failure    └────┘                   │
-    │      ↓                         ↓                      │
-    │      │                         │                      │
+    │   └────┘  ISL Link Failure  └────┘                   │
+    │      ↓                         ↓                     │
+    │      │                         │                     │
     │      └────────→ ┌────┐ ←───────┘                     │
     │                 │ Q  │  IP Quorum                    │
     │                 └────┘  Decides!                     │
-    │                                                       │
+    │                                                      │
     │        Prevents Split-Brain Scenarios                │
-    │                                                       │
+    │                                                      │
     └──────────────────────────────────────────────────────┘
 ```
 
@@ -63,9 +66,17 @@
 ### One-Command Installation
 
 ```bash
-# Download and run the automated installer
-curl -fsSL https://github.com/olemyk/ibm-storage-virtualize-ipquorum-service/releases/latest/download/ipquorum-service-latest.tar.gz | tar -xz
-cd ipquorum-service-*
+# Download latest release (automatically gets the latest version)
+LATEST_VERSION=$(curl -s https://api.github.com/repos/olemyk/ibm-storage-virtualize-ipquorum-service/releases/latest | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
+curl -fsSL "https://github.com/olemyk/ibm-storage-virtualize-ipquorum-service/releases/download/v${LATEST_VERSION}/ipquorum-service-${LATEST_VERSION}.tar.gz" -o ipquorum-service-${LATEST_VERSION}.tar.gz
+tar -xzf ipquorum-service-${LATEST_VERSION}.tar.gz
+cd ipquorum-service-${LATEST_VERSION}
+sudo ./install-ipquorum-service.sh
+
+# Or download specific version (e.g., 2.0.2)
+curl -fsSL https://github.com/olemyk/ibm-storage-virtualize-ipquorum-service/releases/download/v2.0.2/ipquorum-service-2.0.2.tar.gz -o ipquorum-service-2.0.2.tar.gz
+tar -xzf ipquorum-service-2.0.2.tar.gz
+cd ipquorum-service-2.0.2
 sudo ./install-ipquorum-service.sh
 ```
 
@@ -108,13 +119,13 @@ sudo ipqm logs svc_cluster01
 
 ### Required
 - **Linux host** (RHEL/CentOS/Rocky/AlmaLinux 8+, Ubuntu 20.04+)
-- **Java Runtime** (OpenJDK 8, 11, 14, or later)
+- **Java Runtime** (OpenJDK 8-17) OpenJDK 11 in installed automatically
 - **Network connectivity** to IBM Storage Virtualize:
   - Port **1260/TCP** (IP Quorum communication)
   - Port **7443/HTTPS** (REST API for automatic download)
 - **Valid credentials**:
-  - **Monitor** role (for downloading JAR)
-  - **Restricted Administrator** role (for creating Quorum Apps)
+  - **Monitor** role (Have permission for downloading JAR)
+  - **Restricted Administrator** role (have permission to download and creating New Quorum App ipquorum.jar)
 
 ### Optional (Installed Automatically)
 - **Go binary** (recommended - no dependencies, fast)
@@ -132,7 +143,23 @@ Run **multiple independent IP Quorum instances** on a single host - perfect for:
 
 ### Architecture Overview
 
-<img src="ipquorum-systemd/images/ipquorum-smal.png" alt="IP Quorum Architecture" style="width:600px;"/>
+```
+    ┌──────────────────────────────────────────────────────┐
+    │                                                      │
+    │   Site A Flashsystem        Site B  Flashsystem      │
+    │   ┌────┐                    ┌────┐                   │
+    │   │ ██ │ ←─────────────────→│ ██ │                   │
+    │   └────┘  ISL Link Failure  └────┘                   │
+    │      ↓                         ↓                     │
+    │      │                         │                     │
+    │      └────────→ ┌────┐ ←───────┘                     │
+    │                 │ Q  │  IP Quorum                    │
+    │                 └────┘  Decides!                     │
+    │                                                      │
+    │        Prevents Split-Brain Scenarios                │
+    │                                                      │
+    └──────────────────────────────────────────────────────┘
+```
 
 ### Instance Management
 
@@ -365,7 +392,7 @@ ipquorum-download --help
 
 ## 🎯 Use Cases
 
-### Single Storage System
+### PBHA Storage System
 ```bash
 # Simple setup for one storage system
 sudo ipqm create production
@@ -374,7 +401,7 @@ sudo ipqm enable production
 sudo ipqm start production
 ```
 
-### Multiple Storage Systems
+### Multiple Storage Systems in PBHA
 ```bash
 # Create instances for each system
 sudo ipqm create datacenter-a
@@ -385,7 +412,7 @@ sudo ipqm create dr-site
 sudo systemctl start ipquorum@{datacenter-a,datacenter-b,dr-site}
 ```
 
-### PBHA (PowerHA) Configuration
+### Storage System PBHA Manual Configuration
 ```bash
 # Create Quorum App for partner system
 sudo ipqm create svc_cluster01
