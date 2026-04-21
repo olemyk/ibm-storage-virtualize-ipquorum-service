@@ -2,6 +2,50 @@
 
 All notable changes to the IP Quorum systemd service will be documented in this file.
 
+## [2.0.2] - 2026-04-21 - Documentation and Release Workflow Fixes
+
+### 📚 Documentation
+
+#### New Documentation
+- **ARCHITECTURE.md** - Comprehensive system architecture documentation
+  - System architecture diagrams
+  - Component descriptions
+  - Data flow explanations
+  - Security architecture
+  - Resource management details
+  - Monitoring and logging guide
+  - High availability considerations
+  - Disaster recovery procedures
+  - Troubleshooting guide
+
+### 🔧 Improvements
+
+#### GitHub Release Workflow
+- **Fixed release filename** - Removed extra "v" prefix from tarball name
+  - Old: `ipquorum-service-v2.0.1.tar.gz`
+  - New: `ipquorum-service-2.0.1.tar.gz`
+- **Updated download URLs** - Corrected Quick Start instructions in release body
+- **Added ARCHITECTURE.md** to release package docs
+- **Improved version handling** - Better variable usage in workflow
+
+### 📦 Release Package Updates
+
+**New files in release:**
+- `docs/ARCHITECTURE.md` - System architecture documentation
+
+**Fixed download instructions:**
+```bash
+# Now works correctly
+VERSION="2.0.2"
+wget https://github.com/olemyk/ibm-storage-virtualize-ipquorum-service/releases/download/v${VERSION}/ipquorum-service-${VERSION}.tar.gz
+```
+
+### ⚠️ Breaking Changes
+
+None - This is a documentation and workflow fix release.
+
+---
+
 ## [2.0.1] - 2026-04-20 - Major Multi-Instance Architecture Update
 
 ### 🎉 Major Features
