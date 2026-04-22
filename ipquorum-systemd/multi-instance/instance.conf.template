@@ -55,6 +55,13 @@ IPQUORUM_LOG_DIR=/var/log/ipquorum/${INSTANCE_NAME}
 IPQUORUM_USER=ipquorum
 IPQUORUM_GROUP=ipquorum
 
+# IP Quorum name (shown in IBM Storage Virtualize)
+# This is the name that appears in "Detected IP quorum Applications" on the storage system
+# Must be 1-20 characters (A-Z, a-z, 0-9 only - no dashes or underscores)
+# Default: Uses instance name with dashes/underscores removed
+# Example: "ipquorumsrv1", "prodquorum", "dcaquorum"
+IPQUORUM_NAME=${INSTANCE_NAME}
+
 # ============================================================================
 # DOWNLOAD CONFIGURATION
 # ============================================================================

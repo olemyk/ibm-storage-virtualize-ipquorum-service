@@ -244,7 +244,7 @@ main() {
         print_info "Available options:"
         print_info "  1. Download from GitHub (latest release)"
         print_info "  2. Download from custom URL"
-        print_info "  3. Install from local directory"
+        print_info "  3. Install from local directory (Go downloader included with release package)"
         print_info "  4. Skip (manual installation required)"
         echo ""
         

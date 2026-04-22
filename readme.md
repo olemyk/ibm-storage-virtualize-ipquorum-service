@@ -55,7 +55,7 @@
     └──────────────────────────────────────────────────────┘
 ```
 
-**IP Quorum** is a tie-breaker service that prevents split-brain scenarios in IBM Storage Virtualize clusters. When exactly half of the nodes become unavailable due to a SAN fault, the IP Quorum application determines which nodes can continue processing host operations, ensuring data integrity and preventing independent I/O processing by both halves of the system.
+**IP Quorum** is a tie-breaker service that prevents split-brain scenarios in IBM Storage Virtualize clusters. When exactly half of the nodes become unavailable due to a Link or SAN Switch fault, the IP Quorum application determines which nodes can continue processing host operations, ensuring data integrity and preventing independent I/O processing by both halves of the system.
 
 **Powers:** IBM Storage FlashSystem and IBM SAN Volume Controller (SVC)
 
@@ -73,16 +73,16 @@ tar -xzf ipquorum-service-${LATEST_VERSION}.tar.gz
 cd ipquorum-service-${LATEST_VERSION}
 sudo ./install-ipquorum-service.sh
 
-# Or download specific version (e.g., 2.0.2)
-curl -fsSL https://github.com/olemyk/ibm-storage-virtualize-ipquorum-service/releases/download/v2.0.2/ipquorum-service-2.0.2.tar.gz -o ipquorum-service-2.0.2.tar.gz
-tar -xzf ipquorum-service-2.0.2.tar.gz
-cd ipquorum-service-2.0.2
+# Or download specific version (e.g., 2.0.5)
+curl -fsSL https://github.com/olemyk/ibm-storage-virtualize-ipquorum-service/releases/download/v2.0.5/ipquorum-service-2.0.5.tar.gz -o ipquorum-service-2.0.5.tar.gz
+tar -xzf ipquorum-service-2.0.5.tar.gz
+cd ipquorum-service-2.0.5
 sudo ./install-ipquorum-service.sh
 ```
 
 The installer will:
 1. ✅ Install systemd service files
-2. ✅ Download Go binary (or use Python/Bash)
+2. ✅ Download Go binary - Included in Release Package (or use Python/Bash) 
 3. ✅ Create directory structure
 4. ✅ Set up instance manager
 5. ✅ Configure permissions and security
@@ -96,15 +96,105 @@ sudo /usr/local/bin/ipquorum-instance-manager.sh create svc_cluster01
 # Or use the alias (after adding to ~/.bashrc)
 echo "alias ipqm='sudo /usr/local/bin/ipquorum-instance-manager.sh'" >> ~/.bashrc
 source ~/.bashrc
-sudo ipqm create svc_cluster01
+```
+```bash
+ipqm create svc_cluster01
 
+# Prompts:
+# 1. IP Quorum Name (shown in IBM Storage Virtualize):
+# 2. IBM Storage System name (optional)
+# 3. Description (optional)
+# 4. Location (optional)
+# 5. Enable automatic JAR download? (yes/no) [yes]
+# 6. API endpoint (if download enabled)
+# 7. Username (if download enabled)
+# 8. Password (if download enabled)
+# 9. Create new quorum app? (yes/no) [yes] 
+# 10. Partner system name (if mkquorumapp enabled)
+# 11. IPv6 settings (if mkquorumapp enabled)
+```
+
+```bash
 # Start the instance
-sudo ipqm enable svc_cluster01
-sudo ipqm start svc_cluster01
+ ipqm enable svc_cluster01
+ ipqm start svc_cluster01
+```
 
+```bash
 # Check status
-sudo ipqm status svc_cluster01
-sudo ipqm logs svc_cluster01
+ ipqm status svc_cluster01
+
+    [packer@rhel94 ipquorum-service-2.0.4]$ ipqm status svc_cluster01
+    ● ipquorum@svc_cluster01.service - IBM Storage Virtualize IP Quorum Service (svc_cluster01)
+        Loaded: loaded (/etc/systemd/system/ipquorum@.service; enabled; preset: disabled)
+        Active: active (running) since Wed 2026-04-22 11:57:04 CEST; 2h 38min ago
+        CGroup: /system.slice/system-ipquorum.slice/ipquorum@svc_cluster01.service
+                ├─35678 bash /usr/local/bin/ipquorum-start-multi.sh svc_cluster01
+                └─35683 /usr/bin/java -jar /var/lib/ipquorum/svc_cluster01/ip_quorum.jar -name rhelvm01 -location /var/log/ipquorum/svc_cluster01/ip_quorum.log
+
+    Apr 22 11:57:08 rhel94 ipquorum-svc_cluster01[35683]: Waiting for UID
+    Apr 22 11:57:08 rhel94 ipquorum-svc_cluster01[35683]: Waiting for UI
+```
+
+```bash
+# Check info about instance
+ipqm info svc_cluster01
+╔════════════════════════════════════════════════════════════════╗
+║  Instance Information: svc_cluster01
+╚════════════════════════════════════════════════════════════════╝
+
+General:
+  Instance Name:        svc_cluster01
+  IP Quorum Name:       ipquorumsrv (shown in IBM Storage Virtualize)
+  IBM Storage System:   SVC Prod
+  Description:          SVC SV2
+  Location:             OSLO-RACK1
+
+Connection:
+  API Endpoint:         10.33.7.80
+  Username:             superuser
+  TLS Verify:           false
+
+Configuration:
+  Download Enabled:     true
+  Download Tool:        go
+  mkquorumapp Enabled:  true
+  Partner System:       svc_cluster02
+
+Paths:
+  Configuration:        /etc/ipquorum/instances/svc_cluster01.conf
+  Password File:        /var/lib/ipquorum/.passwords/svc_cluster01.password
+  Data Directory:       /var/lib/ipquorum/svc_cluster01
+  Log Directory:        /var/log/ipquorum/svc_cluster01
+  JAR File:             /var/lib/ipquorum/svc_cluster01/ip_quorum.jar
+
+Service Status:
+  Status:               Running
+  Enabled:              Yes
+
+```
+
+
+```bash
+# Check logs for instance
+ ipqm logs svc_cluster01
+
+[packer@rhel94 ipquorum-service-2.0.4]$ ipqm logs svc_cluster01
+=== Systemd Journal Logs ===
+Apr 22 11:56:59 rhel94 ipquorum-svc_cluster01[35667]: 2026-04-22 11:56:59 - INFO - Get Token, please wait...
+Apr 22 11:56:59 rhel94 ipquorum-svc_cluster01[35667]: 2026-04-22 11:56:59 - INFO - Auth attempt 1/
+
+=== Download Logs ===
+[2026-04-22 11:49:25] [svc_cluster01] [INFO] === IP Quorum Download Script Started for Instance: svc_cluster01 ===
+[2026-04-22 11:49:25] [svc_cluster01] [INFO] IBM Storage System: svc_cluster01-prod
+[2026-04-22 11:49:25] [svc_cluster01] [INFO] mkquorumapp is enabled, validating configuration...
+[2026-04-22 11:49:25] [svc_cluster01] [INFO] mkquorumapp configuration validated:
+
+=== IP Quorum Application Logs ===
+==> /var/log/ipquorum/svc_cluster01/ip_quorum.log.17768513779750.0 <==
+2026-04-22 11:55:18:692 10.33.7.90 [13] FINE: >Msg [protocol=1, sequence=25, 
+
+
 ```
 
 **That's it!** Your IP Quorum service is running and will automatically:
@@ -144,47 +234,80 @@ Run **multiple independent IP Quorum instances** on a single host - perfect for:
 ### Architecture Overview
 
 ```
-    ┌──────────────────────────────────────────────────────┐
-    │                                                      │
-    │   Site A Flashsystem        Site B  Flashsystem      │
-    │   ┌────┐                    ┌────┐                   │
-    │   │ ██ │ ←─────────────────→│ ██ │                   │
-    │   └────┘  ISL Link Failure  └────┘                   │
-    │      ↓                         ↓                     │
-    │      │                         │                     │
-    │      └────────→ ┌────┐ ←───────┘                     │
-    │                 │ Q  │  IP Quorum                    │
-    │                 └────┘  Decides!                     │
-    │                                                      │
-    │        Prevents Split-Brain Scenarios                │
-    │                                                      │
-    └──────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────┐
+│                         Linux Host (RHEL/Ubuntu)                   │
+│                                                                    │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │                    Systemd Service Manager                  │   │
+│  │                                                             │   │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │   │
+│  │  │ ipquorum@    │  │ ipquorum@    │  │ ipquorum@    │       │   │
+│  │  │ system1      │  │ system2      │  │ datacenter-a │       │   │
+│  │  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘       │   │
+│  └─────────┼──────────────────┼──────────────────┼─────────────┘   │
+│            │                  │                  │                 │
+│  ┌─────────▼──────────────────▼──────────────────▼─────────────┐   │
+│  │              Instance-Specific Resources                    │   │
+│  │                                                             │   │
+│  │  /etc/ipquorum/instances/                                   │   │
+│  │  ├── system1.conf          ← Configuration                  │   │
+│  │  ├── system2.conf                                           │   │
+│  │  └── datacenter-a.conf                                      │   │
+│  │                                                             │   │
+│  │  /var/lib/ipquorum/                                         │   │
+│  │  ├── system1/                                               │   │
+│  │  │   ├── ip_quorum.jar     ← JAR file                       │   │
+│  │  │   ├── .password         ← Credentials                    │   │
+│  │  │   └── logs/             ← Log files                      │   │
+│  │  ├── system2/                                               │   │
+│  │  └── datacenter-a/                                          │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│                                                                    │
+│  ┌───────────────────────────────────────────────────────────────┐ │
+│  │              Management Tools                                 │ │
+│  │                                                               │ │
+│  │  /usr/local/bin/                                              │ │
+│  │  ├── ipquorum-instance-manager.sh  ← CLI management           │ │
+│  │  ├── ipquorum-start-multi.sh       ← Startup script           │ │
+│  │  ├── ipquorum-download-multi.sh    ← Download script          │ │
+│  │  └── ipquorum-validate-multi.sh    ← Validation script        │ │
+│  └───────────────────────────────────────────────────────────────┘ │
+└────────────────────────────────────────────────────────────────────┘
+         │                    │                    │
+         │ HTTPS:7443         │ HTTPS:7443         │ HTTPS:7443
+         │ IPQuorum 1260.     │ IPQuorum 1260      │ IPQuorum 1260
+         ▼                    ▼                    ▼
+┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+│ IBM Storage     │  │ IBM Storage     │  │ IBM Storage     │
+│ Virtualize      │  │ Virtualize      │  │ Virtualize      │
+│ System 1        │  │ System 2        │  │ Datacenter A    │
+└─────────────────┘  └─────────────────┘  └─────────────────┘
 ```
 
 ### Instance Management
 
 ```bash
 # List all instances
-sudo ipqm list
+ ipqm list
 
 # Create multiple instances
-sudo ipqm create datacenter-a
-sudo ipqm create datacenter-b
-sudo ipqm create production
+ ipqm create datacenter-a
+ ipqm create datacenter-b
+ ipqm create production
 
 # Manage instances
-sudo ipqm start datacenter-a
-sudo ipqm stop datacenter-b
-sudo ipqm restart production
-sudo ipqm status datacenter-a
-sudo ipqm logs datacenter-a -f
+ ipqm start datacenter-a
+ ipqm stop datacenter-b
+ ipqm restart production
+ ipqm status datacenter-a
+ ipqm logs datacenter-a -f
 
 # Enable/disable auto-start
-sudo ipqm enable datacenter-a
-sudo ipqm disable datacenter-b
+ ipqm enable datacenter-a
+ ipqm disable datacenter-b
 
 # Delete instance
-sudo ipqm delete old-system
+ ipqm delete old-system
 ```
 
 Each instance has:
@@ -194,7 +317,7 @@ Each instance has:
 - ✅ **Dedicated logs** (`/var/log/ipquorum/<name>/`)
 - ✅ **Systemd service** (`ipquorum@<name>.service`)
 
-📖 **[Complete Multi-Instance Guide](ipquorum-systemd/multi-instance/README-MULTI-INSTANCE.md)**
+📖 **[Complete Multi-Instance Guide](ipquorum-systemd/multi-instance/README.md)**
 
 ---
 
@@ -220,7 +343,7 @@ The installer includes a **Go-based download tool** that automatically fetches t
 - ✅ **TLS configuration** (insecure by default, secure option available)
 - ✅ **Smart error handling** with detailed diagnostics
 
-### Manual Download Example
+### Manual Download of IPQuorum Jar file from IBM Storage Virtualize - Example
 
 ```bash
 # Interactive (most secure)
@@ -244,7 +367,7 @@ ipquorum-download \
 
 ---
 
-## 🔧 Configuration
+## 🔧 Manual Configuration of IPQuorum Service config file
 
 ### Instance Configuration File
 
@@ -292,14 +415,17 @@ sudo chown root:root /var/lib/ipquorum/svc_cluster01/.password
 
 ```bash
 # Instance status
-sudo ipqm status svc_cluster01
+ ipqm status svc_cluster01
+
+# Info status
+ ipqm info svc_cluster01
 
 # Systemd status
-sudo systemctl status ipquorum@svc_cluster01
+ sudo systemctl status ipquorum@svc_cluster01
 
 # View logs
-sudo ipqm logs svc_cluster01 -f
-sudo journalctl -u ipquorum@svc_cluster01 -f
+ ipqm logs svc_cluster01 -f
+ sudo journalctl -u ipquorum@svc_cluster01 -f
 
 # Check from Storage Virtualize
 ssh superuser@YOUR_SV_IP
@@ -334,6 +460,8 @@ sudo firewall-cmd --reload
 
 **Authentication failed:**
 ```bash
+# Validate the config
+ipqm validate svc_cluster01
 # Verify credentials
 cat /var/lib/ipquorum/svc_cluster01/.password
 # Check user role on Storage Virtualize
@@ -374,9 +502,9 @@ ipquorum-download --help
 ## 📚 Documentation
 
 ### Deployment Guides
-- **[Multi-Instance Service](ipquorum-systemd/multi-instance/README-MULTI-INSTANCE.md)** - Complete guide (recommended)
+- **[Multi-Instance Service](ipquorum-systemd/multi-instance/README.md)** - Complete guide (recommended)
 - **[Deployment Guide](DEPLOYMENT-GUIDE.md)** - Distribution and packaging options
-- **[Architecture Overview](ipquorum-systemd/ARCHITECTURE.md)** - System design and components
+- **[Architecture Overview](ipquorum-systemd/multi-instance/ARCHITECTURE.md)** - System design and components
 
 ### Download Tools
 - **[Go Download Tool](ipquorum-download-go/README.md)** - Recommended, single binary
@@ -395,18 +523,18 @@ ipquorum-download --help
 ### PBHA Storage System
 ```bash
 # Simple setup for one storage system
-sudo ipqm create production
+ ipqm create production
 # Configure and start
-sudo ipqm enable production
-sudo ipqm start production
+ ipqm enable production
+ ipqm start production
 ```
 
 ### Multiple Storage Systems in PBHA
 ```bash
 # Create instances for each system
-sudo ipqm create datacenter-a
-sudo ipqm create datacenter-b
-sudo ipqm create dr-site
+ ipqm create datacenter-a
+ ipqm create datacenter-b
+ ipqm create dr-site
 
 # Start all instances
 sudo systemctl start ipquorum@{datacenter-a,datacenter-b,dr-site}
@@ -415,11 +543,11 @@ sudo systemctl start ipquorum@{datacenter-a,datacenter-b,dr-site}
 ### Storage System PBHA Manual Configuration
 ```bash
 # Create Quorum App for partner system
-sudo ipqm create svc_cluster01
+ ipqm create svc_cluster01
 # Edit config to set partnersystem=svc_cluster02
 sudo vi /etc/ipquorum/instances/svc_cluster01.conf
 # Start with mkquorumapp enabled
-sudo ipqm start svc_cluster01
+ ipqm start svc_cluster01
 ```
 
 ---

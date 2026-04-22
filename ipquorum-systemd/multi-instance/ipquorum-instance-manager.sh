@@ -44,6 +44,7 @@ Commands:
   logs <name> [lines]                Show logs for an instance (default: 50 lines)
   validate <name>                    Validate instance configuration
   info <name>                        Show detailed information about an instance
+  update-password <name>             Update the password for an instance
 
 Examples:
   # Interactive instance creation (recommended)
@@ -58,6 +59,9 @@ Examples:
   $(basename "$0") start svc_cluster01
   $(basename "$0") logs svc_cluster01 100
   $(basename "$0") validate svc_cluster01
+  
+  # Update password
+  $(basename "$0") update-password svc_cluster01
 
 EOF
 }
@@ -138,16 +142,45 @@ cmd_create() {
     echo ""
     
     # Interactive configuration
-    local description api_endpoint username password
+    local description storage_system storage_location ipquorum_name api_endpoint username password
     local enable_download="true" enable_mkquorumapp="false"
     local partnersystem ip6="false" partnerip6="false" nometadata="false"
     
     if [[ "$interactive" == "yes" ]]; then
         # Basic information
-        echo "NOTE: Instance name '${name}' will be shown in IBM Storage Virtualize IP Quorum list"
+        echo "╔════════════════════════════════════════════════════════════════╗"
+        echo "║  Instance Configuration"
+        echo "╚════════════════════════════════════════════════════════════════╝"
         echo ""
-        read -p "Description for documentation (e.g., 'IBM FlashSystem 7600 - Production Site A'): " description
-        description="${description:-IBM Storage Virtualize System}"
+        
+        # IP Quorum name (shown in IBM Storage Virtualize)
+        echo "IP Quorum Name (shown in IBM Storage Virtualize):"
+        echo "  - This name appears in 'Detected IP quorum Applications' on the storage system"
+        echo "  - Must be 1-20 characters (A-Z, a-z, 0-9 only - no dashes or underscores)"
+        echo "  - Example: 'ipquorumsrv1', 'prodquorum', 'dcaquorum'"
+        read -p "IP Quorum name [${name}]: " ipquorum_name
+        ipquorum_name="${ipquorum_name:-${name}}"
+        
+        # Validate and sanitize IP Quorum name
+        ipquorum_name=$(echo "$ipquorum_name" | tr -d '_-')
+        if [[ ! "$ipquorum_name" =~ ^[A-Za-z0-9]{1,20}$ ]]; then
+            print_warning "Invalid IP Quorum name. Using sanitized instance name."
+            ipquorum_name=$(echo "${name}" | tr -d '_-')
+        fi
+        echo "  → Will use: ${ipquorum_name}"
+        echo ""
+        
+        # Storage system identification (optional, for documentation)
+        read -p "IBM Storage System name (e.g., 'svc_cluster01', 'Production-SAN') [optional]: " storage_system
+        storage_system="${storage_system:-}"
+        
+        read -p "Description (e.g., 'IBM FlashSystem 7600 - Production Site A') [optional]: " description
+        description="${description:-}"
+        
+        read -p "Location (e.g., 'Datacenter A, Rack 12') [optional]: " storage_location
+        storage_location="${storage_location:-}"
+        
+        echo ""
         
         # Download configuration
         read -p "Enable automatic JAR download? (yes/no) [yes]: " enable_download_input
@@ -177,8 +210,8 @@ cmd_create() {
             done
             
             # mkquorumapp configuration
-            read -p "Create new quorum app (mkquorumapp)? (yes/no) [no]: " mkquorum_input
-            mkquorum_input=$(echo "${mkquorum_input:-no}" | tr '[:upper:]' '[:lower:]')
+            read -p "Create new quorum app (mkquorumapp)? (yes/no) [yes]: " mkquorum_input
+            mkquorum_input=$(echo "${mkquorum_input:-yes}" | tr '[:upper:]' '[:lower:]')
             if [[ "$mkquorum_input" =~ ^(yes|y|true|1)$ ]]; then
                 enable_mkquorumapp="true"
                 
@@ -218,7 +251,20 @@ cmd_create() {
     # Replace placeholders
     sed -i "s/<INSTANCE_NAME>/${name}/g" "$conf_file"
     sed -i "s/<DATE>/$(date '+%Y-%m-%d')/g" "$conf_file"
-    sed -i "s|<DESCRIPTION>|${description}|g" "$conf_file"
+    
+    # Update documentation fields (set during interactive mode or leave empty)
+    if [[ -n "$storage_system" ]]; then
+        sed -i "s|IBM_STORAGE_SYSTEM=\"<HOSTNAME_OR_IP>\"|IBM_STORAGE_SYSTEM=\"${storage_system}\"|g" "$conf_file"
+    fi
+    if [[ -n "$description" ]]; then
+        sed -i "s|IBM_STORAGE_DESCRIPTION=\"\"|IBM_STORAGE_DESCRIPTION=\"${description}\"|g" "$conf_file"
+    fi
+    if [[ -n "$storage_location" ]]; then
+        sed -i "s|IBM_STORAGE_LOCATION=\"\"|IBM_STORAGE_LOCATION=\"${storage_location}\"|g" "$conf_file"
+    fi
+    if [[ -n "$ipquorum_name" ]]; then
+        sed -i "s|IPQUORUM_NAME=\${INSTANCE_NAME}|IPQUORUM_NAME=${ipquorum_name}|g" "$conf_file"
+    fi
     
     # Update configuration based on interactive input
     if [[ "$interactive" == "yes" && "$enable_download" == "true" ]]; then
@@ -648,7 +694,9 @@ cmd_info() {
     
     echo -e "${BLUE}General:${NC}"
     echo "  Instance Name:        $name"
+    echo "  IP Quorum Name:       ${IPQUORUM_NAME:-Not set} (shown in IBM Storage Virtualize)"
     echo "  IBM Storage System:   ${IBM_STORAGE_SYSTEM:-Not set}"
+    echo "  Description:          ${IBM_STORAGE_DESCRIPTION:-Not set}"
     echo "  Location:             ${IBM_STORAGE_LOCATION:-Not set}"
     echo ""
     
@@ -687,6 +735,96 @@ cmd_info() {
     else
         echo -e "  Enabled:              ${RED}No${NC}"
     fi
+    echo ""
+}
+
+# Update password for an instance
+cmd_update_password() {
+    check_root
+    
+    local name="${1:-}"
+    
+    if [[ -z "$name" ]]; then
+        print_error "Instance name is required"
+        exit 1
+    fi
+    
+    if ! instance_exists "$name"; then
+        print_error "Instance '$name' does not exist"
+        exit 1
+    fi
+    
+    local conf_file="${INSTANCES_DIR}/${name}.conf"
+    source "$conf_file"
+    
+    local password_file="${PASSWORDS_DIR}/${name}.password"
+    
+    echo ""
+    echo -e "${CYAN}╔════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║${NC}  Update Password for Instance: ${GREEN}${name}${NC}"
+    echo -e "${CYAN}╚════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    
+    print_info "Current username: ${VIRTUALIZE_USERNAME:-Not set}"
+    echo ""
+    
+    # Prompt for new password (hidden input)
+    local new_password
+    local confirm_password
+    
+    while true; do
+        echo -n "Enter new password: "
+        read -rs new_password
+        echo ""
+        
+        if [[ -z "$new_password" ]]; then
+            print_error "Password cannot be empty"
+            continue
+        fi
+        
+        echo -n "Confirm new password: "
+        read -rs confirm_password
+        echo ""
+        
+        if [[ "$new_password" != "$confirm_password" ]]; then
+            print_error "Passwords do not match. Please try again."
+            echo ""
+            continue
+        fi
+        
+        break
+    done
+    
+    # Create password file with secure permissions
+    echo "$new_password" > "$password_file"
+    chmod 400 "$password_file"
+    chown ipquorum:ipquorum "$password_file" 2>/dev/null || true
+    
+    print_success "Password updated successfully"
+    echo ""
+    
+    # Ask if user wants to restart the service
+    local restart_choice
+    read -p "Restart the service to apply changes? (yes/no) [yes]: " restart_choice
+    restart_choice=$(echo "${restart_choice:-yes}" | tr '[:upper:]' '[:lower:]')
+    
+    if [[ "$restart_choice" == "yes" || "$restart_choice" == "y" ]]; then
+        echo ""
+        print_info "Restarting service..."
+        systemctl restart "ipquorum@${name}.service"
+        
+        # Wait a moment and check status
+        sleep 2
+        if systemctl is-active --quiet "ipquorum@${name}.service"; then
+            print_success "Service restarted successfully"
+        else
+            print_warning "Service may have failed to start. Check logs with: sudo ipquorum logs ${name}"
+        fi
+    else
+        print_info "Password updated but service not restarted"
+        print_info "Restart manually with: sudo systemctl restart ipquorum@${name}.service"
+    fi
+    
     echo ""
 }
 
@@ -737,6 +875,9 @@ main() {
             ;;
         info)
             cmd_info "$@"
+            ;;
+        update-password)
+            cmd_update_password "$@"
             ;;
         help|--help|-h)
             print_usage

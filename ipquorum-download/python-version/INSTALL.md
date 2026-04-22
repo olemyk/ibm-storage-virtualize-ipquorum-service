@@ -211,7 +211,7 @@ If both commands succeed, you're ready to use the script!
 
 ## Next Steps
 
-- Read [README-python.md](README-python.md) for usage instructions
+- Read [README.md](README.md) for usage instructions
 - Check [MIGRATION-GUIDE.md](MIGRATION-GUIDE.md) if migrating from bash version
 - Review examples in the documentation
 

@@ -1,6 +1,6 @@
 # IBM Storage Virtualize IP Quorum - Multi-Instance Service
 
-Run multiple independent IP Quorum instances on a single host, each connecting to a different IBM Storage Virtualize System.
+Run singel or multiple independent IP Quorum instances on a single host, each connecting to a different IBM Storage Virtualize System.
 
 ## 🚀 Quick Start
 
@@ -29,7 +29,7 @@ sudo ipquorum-instance-manager.sh status svc_cluster01
 sudo ipquorum-instance-manager.sh logs svc_cluster01
 ```
 
-### Method 2: Manual Configuration
+### Method 2: Manual Configuration of the config file. 
 
 ```bash
 # 1. Make scripts executable (if not already)

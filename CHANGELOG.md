@@ -2,6 +2,95 @@
 
 All notable changes to the IP Quorum systemd service will be documented in this file.
 
+## [2.0.5] - 2026-04-22 - User Experience Improvements
+
+### 🎯 Enhancements
+
+#### Instance Manager
+- **Password update command** - New `update-password` command for changing instance passwords
+  - Interactive password entry with confirmation
+  - Secure hidden input (passwords not visible on screen)
+  - Automatic file permissions (chmod 400)
+  - Optional service restart after password change
+  - Usage: `sudo ipquorum update-password <instance-name>`
+
+#### Installer
+- **Clarified local install option** - Updated option 3 text to explicitly mention Go downloader is included
+  - Old: "3. Install from local directory"
+  - New: "3. Install from local directory (Go downloader included with release package)"
+
+#### Interactive Configuration
+- **Better default for mkquorumapp** - Changed default from 'no' to 'yes' for more intuitive workflow
+  - Most users want to create quorum apps, so 'yes' is now the default
+  - Prompt: "Create new quorum app (mkquorumapp)? (yes/no) [yes]:"
+
+- **Enhanced instance creation prompts** - Added prompts for documentation fields
+  - IBM Storage System name (e.g., 'svc_cluster01', 'Production-SAN')
+  - Description (e.g., 'IBM FlashSystem 7600 - Production Site A')
+  - Location (e.g., 'Datacenter A, Rack 12')
+  - All fields are optional and used for documentation/identification only
+
+- **Improved info display** - Enhanced `info` command output with more fields
+  - Shows: Instance Name, IP Quorum Name, IBM Storage System, Description, Location
+  - Makes it easier to identify and document instances
+
+- **Customizable IP Quorum name** - Set the name shown in IBM Storage Virtualize
+  - Interactive prompt during instance creation
+  - Appears in "Detected IP quorum Applications" on the storage system
+  - Must be 1-20 characters (A-Z, a-z, 0-9 only - no dashes or underscores)
+  - Example: "ipquorumsrv1", "prodquorum", "dcaquorum"
+  - Defaults to sanitized instance name if not specified
+  - Helps identify which server is running the IP Quorum service
+
+### 💡 Usage Examples
+
+**Update instance password:**
+```bash
+# If you have the ipquorum alias set up:
+sudo ipquorum update-password svc_cluster01
+
+# Or use the full path:
+sudo /usr/local/bin/ipquorum-instance-manager.sh update-password svc_cluster01
+
+# The command will:
+# 1. Prompt for new password (hidden input)
+# 2. Ask for confirmation
+# 3. Update password file with secure permissions
+# 4. Optionally restart the service
+```
+
+**Note:** If `sudo ipquorum` doesn't work, use the full path or add this to `/etc/sudoers.d/ipquorum-alias`:
+```bash
+Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
+```
+
+**Create instance with new defaults:**
+```bash
+# mkquorumapp now defaults to 'yes'
+sudo ipquorum create svc_cluster01
+# Just press Enter to accept 'yes' for mkquorumapp
+```
+
+### 🔧 Technical Details
+
+#### Password Update Function
+- Validates instance exists before proceeding
+- Uses `read -rs` for secure password input
+- Stores password in `/var/lib/ipquorum/.passwords/<instance>.password`
+- Sets file permissions to 400 (read-only for owner)
+- Changes ownership to `ipquorum:ipquorum`
+- Provides service restart option
+
+#### Files Modified
+- `ipquorum-systemd/multi-instance/ipquorum-instance-manager.sh`
+  - Added `cmd_update_password()` function
+  - Added `update-password` command case
+  - Updated usage documentation and examples
+- `ipquorum-systemd/multi-instance/install-ipquorum-service.sh`
+  - Updated option 3 description text
+
+---
+
 ## [2.0.4] - 2026-04-21 - Go Binary Standalone Releases
 
 ### 🚀 New Features
