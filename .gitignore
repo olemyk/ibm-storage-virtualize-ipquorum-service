@@ -1,11 +1,11 @@
 ipquorum-systemd/LOGO.md
-DEPLOYMENT-GUIDE.md
 RELEASE-PROCESS.md
 ipquorum-download/bash-version/ip_quorum.jar
 ipquorum-download/bash-version/simple-restapi-download.sh
 ipquorum-download-go/PLAN.md
 ipquorum-systemd/ipquorum-download-go-linux-amd64
 ipquorum-download-go/GITHUB-ACTIONS-GUIDE.md
-ipquorum-download-go/RELEASE.md
-.bob/mcp.json
+.bob/*
 ipquorum-download-go/ipquorum-download-go
+SECURITY-AUDIT-REPORT.md
+ipquorum-systemd/multi-instance/ipquorum@.service.hardened

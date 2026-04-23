@@ -586,5 +586,3 @@ This multi-instance configuration system is provided as-is for use with IBM Stor
 **Status**: Production Ready
 
 ---
-
-*Made with ❤️ and systemd by Bob*

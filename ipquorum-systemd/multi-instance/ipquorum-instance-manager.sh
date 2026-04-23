@@ -45,6 +45,7 @@ Commands:
   validate <name>                    Validate instance configuration
   info <name>                        Show detailed information about an instance
   update-password <name>             Update the password for an instance
+  check-network <name>               Check network connectivity to storage system
 
 Examples:
   # Interactive instance creation (recommended)
@@ -62,6 +63,9 @@ Examples:
   
   # Update password
   $(basename "$0") update-password svc_cluster01
+  
+  # Check network connectivity
+  $(basename "$0") check-network svc_cluster01
 
 EOF
 }
@@ -108,6 +112,93 @@ validate_instance_name() {
 instance_exists() {
     local name="$1"
     [[ -f "${INSTANCES_DIR}/${name}.conf" ]]
+
+# Check if a specific port is reachable on a host
+check_port_connectivity() {
+    local host="$1"
+    local port="$2"
+    local timeout="${3:-5}"
+    
+    # Use bash's built-in /dev/tcp for port checking
+    if timeout "$timeout" bash -c "cat < /dev/null > /dev/tcp/${host}/${port}" 2>/dev/null; then
+        return 0  # Port is reachable
+    else
+        return 1  # Port is not reachable
+    fi
+}
+
+# Check connectivity to IBM Storage Virtualize system
+check_storage_connectivity() {
+    local host="$1"
+    local check_type="${2:-full}"  # full, api-only, or quorum-only
+    
+    echo ""
+    echo -e "${CYAN}╔════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║  Network Connectivity Check: ${host}${NC}"
+    echo -e "${CYAN}╚════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    
+    local api_status="UNKNOWN"
+    local quorum_status="UNKNOWN"
+    local warnings=0
+    
+    # Check REST API port (7443)
+    if [[ "$check_type" == "full" || "$check_type" == "api-only" ]]; then
+        echo -n "Checking REST API port (7443)... "
+        if check_port_connectivity "$host" "7443" 5; then
+            echo -e "${GREEN}✓ REACHABLE${NC}"
+            api_status="OK"
+        else
+            echo -e "${YELLOW}✗ UNREACHABLE${NC}"
+            api_status="FAILED"
+            warnings=$((warnings + 1))
+            print_warning "REST API port 7443 is not reachable"
+            echo "  This may indicate:"
+            echo "  - Firewall blocking port 7443"
+            echo "  - Storage system is offline"
+            echo "  - Incorrect hostname/IP address"
+            echo "  - Network routing issues"
+            echo ""
+        fi
+    fi
+    
+    # Check IP Quorum port (1260)
+    if [[ "$check_type" == "full" || "$check_type" == "quorum-only" ]]; then
+        echo -n "Checking IP Quorum port (1260)... "
+        if check_port_connectivity "$host" "1260" 5; then
+            echo -e "${GREEN}✓ REACHABLE${NC}"
+            quorum_status="OK"
+        else
+            echo -e "${YELLOW}✗ UNREACHABLE${NC}"
+            quorum_status="FAILED"
+            warnings=$((warnings + 1))
+            print_warning "IP Quorum port 1260 is not reachable"
+            echo "  This may indicate:"
+            echo "  - Firewall blocking port 1260"
+            echo "  - IP Quorum service not yet configured on storage system"
+            echo "  - Network routing issues"
+            echo ""
+            echo "  Note: This is normal if you haven't configured IP Quorum on the storage system yet."
+            echo ""
+        fi
+    fi
+    
+    echo ""
+    if [[ $warnings -eq 0 ]]; then
+        print_success "All connectivity checks passed"
+    else
+        print_warning "Some connectivity checks failed ($warnings warning(s))"
+        echo ""
+        echo "You can proceed with instance creation, but you may need to:"
+        echo "  1. Configure firewall rules to allow ports 7443 and 1260"
+        echo "  2. Verify the storage system hostname/IP is correct"
+        echo "  3. Ensure the storage system is powered on and accessible"
+    fi
+    echo ""
+    
+    return $warnings
+}
+
 }
 
 # Create new instance
@@ -207,6 +298,16 @@ cmd_create() {
                 print_error "Password is required"
                 read -sp "Password: " password
                 echo ""
+            
+            # Run network connectivity check
+            check_storage_connectivity "$api_endpoint" "full"
+            
+            read -p "Continue with instance creation? (yes/no) [yes]: " continue_input
+            continue_input=$(echo "${continue_input:-yes}" | tr '[:upper:]' '[:lower:]')
+            if [[ ! "$continue_input" =~ ^(yes|y|true|1)$ ]]; then
+                print_info "Instance creation cancelled by user"
+                exit 0
+            fi
             done
             
             # mkquorumapp configuration
@@ -828,6 +929,42 @@ cmd_update_password() {
     echo ""
 }
 
+# Check network connectivity for an instance
+cmd_check_network() {
+    local name="${1:-}"
+    
+    if [[ -z "$name" ]]; then
+        print_error "Instance name is required"
+        echo "Usage: $0 check-network <instance-name>"
+        exit 1
+    fi
+    
+    if ! instance_exists "$name"; then
+        print_error "Instance '$name' does not exist"
+        exit 1
+    fi
+    
+    # Load instance configuration
+    local conf_file="${INSTANCES_DIR}/${name}.conf"
+    source "$conf_file"
+    
+    if [[ -z "${IPQUORUM_API_ENDPOINT:-}" ]]; then
+        print_error "API endpoint not configured for instance '$name'"
+        echo "Please configure IPQUORUM_API_ENDPOINT in: $conf_file"
+        exit 1
+    fi
+    
+    echo ""
+    echo -e "${CYAN}╔════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║${NC}  Network Connectivity Check for Instance: ${GREEN}${name}${NC}"
+    echo -e "${CYAN}╚════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    print_info "API Endpoint: ${IPQUORUM_API_ENDPOINT}"
+    
+    check_storage_connectivity "${IPQUORUM_API_ENDPOINT}" "full"
+}
+
+
 # Main command dispatcher
 main() {
     local command="${1:-}"
@@ -878,6 +1015,9 @@ main() {
             ;;
         update-password)
             cmd_update_password "$@"
+            ;;
+        check-network)
+            cmd_check_network "$@"
             ;;
         help|--help|-h)
             print_usage

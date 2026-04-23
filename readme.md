@@ -204,6 +204,12 @@ Apr 22 11:56:59 rhel94 ipquorum-svc_cluster01[35667]: 2026-04-22 11:56:59 - INFO
 - Log to centralized location
 
 ---
+## 📺 Visual Guide - IP Quorum Service installation demo
+
+![Animated demonstration showing the complete IP Quorum Service installation process including download, configuration, and service startup](ipquorum-service-install.gif)
+*Complete installation and configuration demonstration*
+
+---
 
 ## 📋 Prerequisites
 

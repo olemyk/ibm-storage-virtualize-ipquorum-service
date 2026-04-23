@@ -123,6 +123,33 @@ if [[ -n "$IBM_STORAGE_SYSTEM" ]]; then
     fi
 fi
 
+# Check 7b: Port connectivity to storage system (if API endpoint is configured)
+if [[ -n "${IPQUORUM_API_ENDPOINT:-}" ]]; then
+    echo ""
+    echo "Checking port connectivity to storage system: ${IPQUORUM_API_ENDPOINT}"
+    
+    # Check REST API port (7443)
+    echo -n "  Checking REST API port (7443)... "
+    if timeout 5 bash -c "cat < /dev/null > /dev/tcp/${IPQUORUM_API_ENDPOINT}/7443" 2>/dev/null; then
+        echo "✓ REACHABLE"
+    else
+        echo "⚠ UNREACHABLE"
+        echo "    WARNING: REST API port (7443) is not reachable" >&2
+        echo "    This may affect automatic JAR downloads and mkquorumapp functionality" >&2
+    fi
+    
+    # Check IP Quorum port (1260)
+    echo -n "  Checking IP Quorum port (1260)... "
+    if timeout 5 bash -c "cat < /dev/null > /dev/tcp/${IPQUORUM_API_ENDPOINT}/1260" 2>/dev/null; then
+        echo "✓ REACHABLE"
+    else
+        echo "⚠ UNREACHABLE"
+        echo "    WARNING: IP Quorum port (1260) is not reachable" >&2
+        echo "    The IP Quorum service may not start successfully" >&2
+        echo "    This is normal if IP Quorum is not yet configured on the storage system" >&2
+    fi
+fi
+
 # Check 8: Port availability (check if another instance is using the same port)
 # IP Quorum typically uses ports in the 1100-1200 range
 # We'll check if any Java process is already running for this instance

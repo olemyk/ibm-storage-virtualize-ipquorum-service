@@ -159,6 +159,9 @@ sudo journalctl -u ipquorum@myinstance.service -f
 sudo ./ipquorum-instance-manager.sh list
 sudo ./ipquorum-instance-manager.sh info myinstance
 sudo ./ipquorum-instance-manager.sh logs myinstance
+
+# Check network connectivity
+sudo ./ipquorum-instance-manager.sh check-network myinstance
 ```
 
 ## 📋 Example Configurations
@@ -194,6 +197,117 @@ Each instance runs independently with:
 - Isolated data directory
 - Isolated log directory
 - Independent systemd service
+
+## 🌐 Network Connectivity
+
+### Automatic Network Checks
+
+The instance manager includes built-in network connectivity checks to help identify firewall or network issues early:
+
+#### During Instance Creation
+Network checks run automatically when you provide an API endpoint during interactive instance creation:
+
+```bash
+sudo ipquorum-instance-manager.sh create prod-cluster01
+# ... configuration prompts ...
+# Network connectivity check runs automatically
+# Checks ports 7443 (REST API) and 1260 (IP Quorum)
+```
+
+#### Manual Network Check
+Check connectivity for an existing instance:
+
+```bash
+sudo ipquorum-instance-manager.sh check-network prod-cluster01
+```
+
+### Monitored Ports
+
+- **7443** - REST API port (required for download and mkquorumapp operations)
+- **1260** - IP Quorum service port (required for runtime connectivity)
+
+### Monitoring Active Connections
+
+Check active IP Quorum connections to verify the service is communicating with storage systems:
+
+```bash
+# Using lsof - shows all connections on port 1260
+sudo lsof -i:1260
+
+# Example output:
+# COMMAND   PID     USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
+# java    35511 ipquorum   11u  IPv6  68430      0t0  TCP server:36304->10.33.7.93:ibm-ssd (ESTABLISHED)
+# java    35511 ipquorum   12u  IPv6  67467      0t0  TCP server:47112->10.33.7.92:ibm-ssd (ESTABLISHED)
+
+# Using netstat - shows connections for java processes
+sudo netstat -putan | grep java
+
+# Example output:
+# tcp6  0  0 10.33.3.215:44180  10.33.7.90:1260  ESTABLISHED 35511/java
+# tcp6  0  0 10.33.3.215:58614  10.33.7.91:1260  ESTABLISHED 35511/java
+```
+
+### Troubleshooting Network Connectivity
+
+#### Port 7443 Unreachable
+
+If REST API port is unreachable:
+
+1. **Verify firewall rules** allow outbound connections to port 7443
+2. **Check storage system** is powered on and accessible
+3. **Verify hostname/IP** address is correct
+4. **Test manually**:
+   ```bash
+   timeout 5 bash -c "cat < /dev/null > /dev/tcp/10.33.7.80/7443" && echo "Port 7443 is open" || echo "Port 7443 is closed"
+   ```
+
+#### Port 1260 Unreachable
+
+If IP Quorum port is unreachable:
+
+1. **Verify IP Quorum is configured** on the storage system
+2. **Check firewall rules** allow bidirectional traffic on port 1260
+3. **Ensure storage system can reach** the IP Quorum server
+4. **Test manually**:
+   ```bash
+   timeout 5 bash -c "cat < /dev/null > /dev/tcp/10.33.7.80/1260" && echo "Port 1260 is open" || echo "Port 1260 is closed"
+   ```
+
+#### Firewall Configuration Examples
+
+**Using firewalld (RHEL/CentOS/Fedora):**
+
+```bash
+# Allow outbound to specific storage system
+sudo firewall-cmd --permanent --add-rich-rule='rule family="ipv4" destination address="10.33.7.80" port port="7443" protocol="tcp" accept'
+sudo firewall-cmd --permanent --add-rich-rule='rule family="ipv4" destination address="10.33.7.80" port port="1260" protocol="tcp" accept'
+sudo firewall-cmd --reload
+
+# Or allow outbound to entire subnet
+sudo firewall-cmd --permanent --add-rich-rule='rule family="ipv4" destination address="10.33.7.0/24" port port="7443" protocol="tcp" accept'
+sudo firewall-cmd --permanent --add-rich-rule='rule family="ipv4" destination address="10.33.7.0/24" port port="1260" protocol="tcp" accept'
+sudo firewall-cmd --reload
+```
+
+**Using iptables:**
+
+```bash
+# Allow outbound to specific storage system
+sudo iptables -A OUTPUT -p tcp -d 10.33.7.80 --dport 7443 -j ACCEPT
+sudo iptables -A OUTPUT -p tcp -d 10.33.7.80 --dport 1260 -j ACCEPT
+
+# Save rules (RHEL/CentOS)
+sudo service iptables save
+```
+
+**Using ufw (Ubuntu/Debian):**
+
+```bash
+# Allow outbound to specific storage system
+sudo ufw allow out to 10.33.7.80 port 7443 proto tcp
+sudo ufw allow out to 10.33.7.80 port 1260 proto tcp
+```
+
 
 ## 🔒 Security
 

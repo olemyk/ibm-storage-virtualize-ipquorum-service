@@ -2,6 +2,101 @@
 
 All notable changes to the IP Quorum systemd service will be documented in this file.
 
+## [2.0.6] - 2026-04-23 - Network Connectivity Checks
+
+### 🌐 New Features
+
+#### Network Connectivity Validation
+- **Automatic port connectivity checks** during instance creation
+  - Validates REST API port (7443) accessibility
+  - Validates IP Quorum port (1260) accessibility
+  - Uses lightweight bash `/dev/tcp` method with 5-second timeout
+  - Advisory warnings (non-blocking) - allows instance creation to proceed even if ports are unreachable
+  - Helps identify firewall blockages and network issues early
+
+- **New `check-network` command** for manual connectivity testing
+  - Usage: `sudo ipquorum check-network <instance-name>`
+  - Tests both ports 7443 and 1260
+  - Provides detailed diagnostic information
+  - Suggests remediation steps for connectivity issues
+
+- **Enhanced validation script** with network checks
+  - Automatic port connectivity validation during service startup
+  - Integrated into `ipquorum-validate-multi.sh`
+  - Runs when API endpoint is configured
+  - Provides warnings for unreachable ports
+
+### 📚 Documentation
+
+#### Network Connectivity Section
+- **Comprehensive troubleshooting guide** added to README
+  - Port testing commands
+  - Firewall configuration examples (firewalld, iptables, ufw)
+  - Connection monitoring with `lsof` and `netstat`
+  - Common issues and solutions
+
+- **Monitoring examples** for active connections
+  ```bash
+  # Check active IP Quorum connections
+  sudo lsof -i:1260
+  sudo netstat -putan | grep java
+  ```
+
+### 🔧 Technical Implementation
+
+#### Helper Functions
+- `check_port_connectivity()` - Tests single port with timeout
+- `check_storage_connectivity()` - Tests both ports with detailed output
+- Uses `timeout` + bash `/dev/tcp` for lightweight, dependency-free checks
+
+#### Integration Points
+1. **Instance creation** - Automatic checks after API endpoint input
+2. **Standalone command** - `check-network` for manual testing
+3. **Validation script** - Pre-flight checks before service start
+
+### 💡 Usage Examples
+
+**During instance creation:**
+```bash
+sudo ipquorum create prod-cluster01
+# ... configuration prompts ...
+# Network connectivity check runs automatically
+# Shows status for ports 7443 and 1260
+# Prompts to continue even if ports are unreachable
+```
+
+**Manual network check:**
+```bash
+sudo ipquorum check-network prod-cluster01
+```
+
+**Monitor active connections:**
+```bash
+# Show all IP Quorum connections
+sudo lsof -i:1260
+
+# Show connections for specific instance
+sudo netstat -putan | grep java | grep 1260
+```
+
+**Test ports manually:**
+```bash
+# Test REST API port
+timeout 5 bash -c "cat < /dev/null > /dev/tcp/10.33.7.80/7443" && echo "Port 7443 is open"
+
+# Test IP Quorum port
+timeout 5 bash -c "cat < /dev/null > /dev/tcp/10.33.7.80/1260" && echo "Port 1260 is open"
+```
+
+### 🎯 Benefits
+
+- **Early problem detection** - Identify network issues before service deployment
+- **Better diagnostics** - Clear error messages with remediation steps
+- **Reduced troubleshooting time** - Quickly verify connectivity
+- **Firewall validation** - Confirm ports are accessible
+- **Non-intrusive** - Advisory warnings don't block instance creation
+
+
 ## [2.0.5] - 2026-04-22 - User Experience Improvements
 
 ### 🎯 Enhancements
