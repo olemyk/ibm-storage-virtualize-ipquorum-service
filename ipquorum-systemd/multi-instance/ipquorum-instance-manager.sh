@@ -14,7 +14,7 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-CYAN='\033[0;36m'
+CYAN='\033[1;36m'  # Bright cyan for better readability on dark terminals
 NC='\033[0m'
 
 # Configuration paths
@@ -112,6 +112,7 @@ validate_instance_name() {
 instance_exists() {
     local name="$1"
     [[ -f "${INSTANCES_DIR}/${name}.conf" ]]
+}
 
 # Check if a specific port is reachable on a host
 check_port_connectivity() {
@@ -199,8 +200,6 @@ check_storage_connectivity() {
     return $warnings
 }
 
-}
-
 # Create new instance
 cmd_create() {
     check_root
@@ -282,8 +281,8 @@ cmd_create() {
             # API configuration
             read -p "IBM Storage Virtualize Cluster/API endpoint (IP or hostname): " api_endpoint
             while [[ -z "$api_endpoint" ]]; do
-                print_error "API endpoint is required for automatic download"
-                read -p "IBM Storage API endpoint (IP or hostname): " api_endpoint
+                print_error "API endpoint (IBM Storage Virtualize Cluster IP) is required for automatic download"
+                read -p "IBM Storage Virtualize Cluster IP/hostname: " api_endpoint
             done
             
             read -p "Username (Monitor role for download, Admin for mkquorumapp): " username
@@ -802,8 +801,8 @@ cmd_info() {
     echo ""
     
     echo -e "${BLUE}Connection:${NC}"
-    echo "  API Endpoint:         ${API_ENDPOINT:-Not set}"
-    echo "  Username:             ${VIRTUALIZE_USERNAME:-Not set}"
+    echo "  API Endpoint (Cluster IP): ${API_ENDPOINT:-Not set}"
+    echo "  Username:                  ${VIRTUALIZE_USERNAME:-Not set}"
     echo "  TLS Verify:           ${IPQUORUM_TLS_VERIFY:-false}"
     echo ""
     
@@ -948,9 +947,9 @@ cmd_check_network() {
     local conf_file="${INSTANCES_DIR}/${name}.conf"
     source "$conf_file"
     
-    if [[ -z "${IPQUORUM_API_ENDPOINT:-}" ]]; then
-        print_error "API endpoint not configured for instance '$name'"
-        echo "Please configure IPQUORUM_API_ENDPOINT in: $conf_file"
+    if [[ -z "${API_ENDPOINT:-}" ]]; then
+        print_error "API endpoint (IBM Storage Virtualize Cluster IP) not configured for instance '$name'"
+        echo "Please configure API_ENDPOINT in: $conf_file"
         exit 1
     fi
     
@@ -959,9 +958,9 @@ cmd_check_network() {
     echo -e "${CYAN}║${NC}  Network Connectivity Check for Instance: ${GREEN}${name}${NC}"
     echo -e "${CYAN}╚════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
-    print_info "API Endpoint: ${IPQUORUM_API_ENDPOINT}"
+    print_info "API Endpoint (Cluster IP): ${API_ENDPOINT}"
     
-    check_storage_connectivity "${IPQUORUM_API_ENDPOINT}" "full"
+    check_storage_connectivity "${API_ENDPOINT}" "full"
 }
 
 

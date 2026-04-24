@@ -2,6 +2,65 @@
 
 All notable changes to the IP Quorum systemd service will be documented in this file.
 
+## [2.0.7] - 2026-04-24 - Bug Fix Release
+
+### 🐛 Bug Fixes
+
+#### Critical Fix: Instance Creation
+- **Fixed instance_exists() function** - Missing closing brace caused all instance creation attempts to fail
+  - Symptom: "Instance already exists" error even when no instances were configured
+  - Root cause: Malformed function definition (missing `}` on line 114)
+  - Impact: Prevented any new instance creation in v2.0.6
+  - Status: ✅ Fixed
+
+- **Fixed orphaned closing brace** - Removed extra `}` on line 203 causing syntax error
+  - Status: ✅ Fixed
+
+#### Bug Fix: check-network Command
+- **Fixed variable name mismatch** in `check-network` command
+  - Changed from `IPQUORUM_API_ENDPOINT` to `API_ENDPOINT` to match config file format
+  - Symptom: "API endpoint not configured" error even when API_ENDPOINT was set
+  - Status: ✅ Fixed
+
+### 🎨 UI Improvements
+
+#### Enhanced Terminal Readability
+- **Improved cyan color visibility** on dark terminal backgrounds
+  - Changed from dark cyan (`\033[0;36m`) to bright cyan (`\033[1;36m`)
+  - Affects: Instance manager and installer scripts
+  - Better readability on black/dark terminals
+  - Status: ✅ Improved
+
+#### Improved Terminology Clarity
+- **Clarified "API endpoint" references** to explicitly mention IBM Storage Virtualize Cluster IP
+  - Updated prompts: "IBM Storage Virtualize Cluster IP/hostname"
+  - Updated labels: "API Endpoint (Cluster IP)"
+  - Updated error messages to include "(IBM Storage Virtualize Cluster IP)"
+  - Helps users understand this should be the storage cluster management IP
+  - Status: ✅ Improved
+
+### 📚 Documentation
+
+#### Enhanced Troubleshooting
+- **Added manual port testing examples** with both `/dev/tcp` and `curl` methods
+  - Confirmed `/dev/tcp` works on RHEL 9.4 with bash 5.1+
+  - Added note explaining `/dev/tcp` is a bash built-in (not a real file)
+  - Included alternative `curl telnet://` method as fallback
+  - Added visual indicators (✓/✗) for test results
+
+### 🔧 Technical Details
+
+**Files Modified:**
+- `ipquorum-systemd/multi-instance/ipquorum-instance-manager.sh` - Fixed function syntax
+- `ipquorum-systemd/multi-instance/README.md` - Enhanced port testing documentation
+
+**Testing Verified:**
+- ✅ `/dev/tcp` method works on RHEL 9.4 (bash 5.1.8)
+- ✅ Port 7443 detection working
+- ✅ Port 1260 detection working
+- ✅ Instance creation now works correctly
+
+
 ## [2.0.6] - 2026-04-23 - Network Connectivity Checks
 
 ### 🌐 New Features

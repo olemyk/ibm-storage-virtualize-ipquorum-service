@@ -256,10 +256,16 @@ If REST API port is unreachable:
 1. **Verify firewall rules** allow outbound connections to port 7443
 2. **Check storage system** is powered on and accessible
 3. **Verify hostname/IP** address is correct
-4. **Test manually**:
+4. **Test manually** (using bash /dev/tcp):
    ```bash
-   timeout 5 bash -c "cat < /dev/null > /dev/tcp/10.33.7.80/7443" && echo "Port 7443 is open" || echo "Port 7443 is closed"
+   # Using bash built-in /dev/tcp (recommended - no dependencies)
+   timeout 5 bash -c "cat < /dev/null > /dev/tcp/10.33.7.80/7443" 2>/dev/null && echo "✓ Port 7443 is open" || echo "✗ Port 7443 is closed"
+   
+   # Alternative using curl telnet (if /dev/tcp doesn't work)
+   timeout 5 curl -v telnet://10.33.7.80:7443 2>&1 | grep -q Connected && echo "✓ Port open" || echo "✗ Port closed"
    ```
+   
+   **Note:** `/dev/tcp` is a bash built-in feature (not a real file). It works on RHEL 9.4 with bash 5.1+.
 
 #### Port 1260 Unreachable
 
@@ -268,10 +274,16 @@ If IP Quorum port is unreachable:
 1. **Verify IP Quorum is configured** on the storage system
 2. **Check firewall rules** allow bidirectional traffic on port 1260
 3. **Ensure storage system can reach** the IP Quorum server
-4. **Test manually**:
+4. **Test manually** (using bash /dev/tcp):
    ```bash
-   timeout 5 bash -c "cat < /dev/null > /dev/tcp/10.33.7.80/1260" && echo "Port 1260 is open" || echo "Port 1260 is closed"
+   # Using bash built-in /dev/tcp (recommended - no dependencies)
+   timeout 5 bash -c "cat < /dev/null > /dev/tcp/10.33.7.80/1260" 2>/dev/null && echo "✓ Port 1260 is open" || echo "✗ Port 1260 is closed"
+   
+   # Alternative using curl telnet (if /dev/tcp doesn't work)
+   timeout 5 curl -v telnet://10.33.7.80:1260 2>&1 | grep -q Connected && echo "✓ Port open" || echo "✗ Port closed"
    ```
+   
+   **Note:** `/dev/tcp` is a bash built-in feature (not a real file). It works on RHEL 9.4 with bash 5.1+.
 
 #### Firewall Configuration Examples
 
