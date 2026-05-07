@@ -1,0 +1,154 @@
+# ===== Operating System Files =====
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*~
+
+# ===== IDE & Editor Files =====
+.idea/
+.vscode/
+*.swp
+*.swo
+*.swn
+.project
+.classpath
+.settings/
+
+# ===== Environment & Secrets =====
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+*.crt
+secrets/
+.secrets/
+
+# ===== Logs =====
+*.log
+logs/
+*.log.*
+server.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ===== Database Files =====
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+data/
+!data/.gitkeep
+
+# ===== Build Artifacts & Binaries =====
+# Go binaries
+server/server
+server/bin/
+agent/ipquorum-agent
+agent/ipquorum-agent-linux
+agent/build/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Node/Web build artifacts
+web/dist/
+web/build/
+web/node_modules/
+node_modules/
+
+# ===== Test & Coverage =====
+*.test
+*.out
+coverage/
+coverage.html
+.nyc_output/
+
+# ===== Temporary & Cache Files =====
+tmp/
+temp/
+*.tmp
+*.cache
+.cache/
+
+# ===== Docker & Container Files =====
+# Keep docker-compose files but ignore override
+docker-compose.override.yml
+
+# ===== Deployment & Scripts =====
+# Keep example scripts but ignore local variations
+deploy-prod.sh
+run-container.sh
+start.sh
+*.local.sh
+
+# ===== Documentation (Development/Internal) =====
+# Keep main docs but ignore internal/temporary docs
+*-INTERNAL.md
+*-DRAFT.md
+*-WIP.md
+HANDOFF-GUIDE.md
+IMPLEMENTATION-PLAN-*.md
+PROJECT-SUMMARY.md
+RELEASE-*.md
+BUGFIX-SUMMARY.md
+CRITICAL-*.md
+QUICK-FIX.md
+SUDO-FIX.md
+*-SUMMARY.md
+*-PROGRESS.md
+*-ROADMAP.md
+*-STATUS.md
+MIGRATION-*.md
+MANAGER-AGENT-FIELDS-UPDATE.md
+
+# ===== Test & Config Files =====
+test-api.sh
+test-config/
+test-scripts/
+diagnose-and-fix.sh
+
+# ===== Prometheus & Monitoring Data =====
+prometheus/data/
+grafana/data/
+alertmanager/data/
+
+# ===== Backup Files =====
+*.bak
+*.backup
+*.old
+*~
+
+# ===== Go Specific =====
+vendor/
+go.work
+go.work.sum
+
+# ===== Keep Important Files =====
+# Explicitly keep these patterns
+!.env.example
+!.gitignore
+!.gitkeep
+!README.md
+!ARCHITECTURE.md
+!API-SPECIFICATION.md
+!DEPLOYMENT.md
+!DEVELOPMENT.md
+!TESTING-GUIDE.md
+!MONITORING.md
+!METRICS.md
+!WEBSOCKET.md
+!QUICK-START.md
+!CONTAINER-DEPLOYMENT.md
+!PRODUCTION-DEPLOYMENT.md
+!AGENT-DEPLOYMENT-GUIDE.md
+
+

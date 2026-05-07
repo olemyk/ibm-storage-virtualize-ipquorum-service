@@ -1,0 +1,16 @@
+server:
+  port: 8443
+  host: "0.0.0.0"
+  log_level: "info"
+  health_check_interval: 30
+
+database:
+  path: "./ipquorum.db"
+
+auth:
+  jwt_secret: "test-secret-key-for-development"
+  token_expiry: 3600
+  refresh_expiry: 86400
+
+agent:
+  scripts_dir: "/opt/ipquorum/scripts"

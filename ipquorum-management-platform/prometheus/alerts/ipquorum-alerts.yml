@@ -1,0 +1,170 @@
+groups:
+  - name: ipquorum_alerts
+    interval: 30s
+    rules:
+      # Instance Alerts
+      - alert: IPQuorumInstanceDown
+        expr: ipquorum_instance_status == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: instance
+        annotations:
+          summary: "IP Quorum instance {{ $labels.instance_name }} is down"
+          description: "Instance {{ $labels.instance_name }} (ID: {{ $labels.instance_id }}) has been down for more than 2 minutes."
+          
+      - alert: IPQuorumInstanceError
+        expr: ipquorum_instance_status == 2
+        for: 1m
+        labels:
+          severity: warning
+          component: instance
+        annotations:
+          summary: "IP Quorum instance {{ $labels.instance_name }} is in error state"
+          description: "Instance {{ $labels.instance_name }} (ID: {{ $labels.instance_id }}) is reporting an error state."
+          
+      - alert: IPQuorumNoActiveInstances
+        expr: ipquorum_instances_active == 0 and ipquorum_instances_total > 0
+        for: 5m
+        labels:
+          severity: critical
+          component: platform
+        annotations:
+          summary: "No active IP Quorum instances"
+          description: "All IP Quorum instances are inactive. Total instances: {{ $value }}"
+          
+      # API Performance Alerts
+      - alert: IPQuorumHighAPILatency
+        expr: histogram_quantile(0.95, rate(ipquorum_api_request_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "High API latency detected"
+          description: "95th percentile API response time is {{ $value }}s (threshold: 1s) for {{ $labels.method }} {{ $labels.path }}"
+          
+      - alert: IPQuorumVeryHighAPILatency
+        expr: histogram_quantile(0.95, rate(ipquorum_api_request_duration_seconds_bucket[5m])) > 5
+        for: 2m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: "Very high API latency detected"
+          description: "95th percentile API response time is {{ $value }}s (threshold: 5s) for {{ $labels.method }} {{ $labels.path }}"
+          
+      - alert: IPQuorumHighErrorRate
+        expr: rate(ipquorum_api_requests_total{status=~"5.."}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "High API error rate"
+          description: "API error rate is {{ $value | humanizePercentage }} for {{ $labels.method }} {{ $labels.path }}"
+          
+      - alert: IPQuorumVeryHighErrorRate
+        expr: rate(ipquorum_api_requests_total{status=~"5.."}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: "Very high API error rate"
+          description: "API error rate is {{ $value | humanizePercentage }} for {{ $labels.method }} {{ $labels.path }}"
+          
+      # System Resource Alerts
+      - alert: IPQuorumHighMemoryUsage
+        expr: process_resident_memory_bytes / 1024 / 1024 > 1024
+        for: 10m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High memory usage"
+          description: "IPQuorum server is using {{ $value }}MB of memory (threshold: 1024MB)"
+          
+      - alert: IPQuorumHighGoroutineCount
+        expr: go_goroutines > 1000
+        for: 10m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High goroutine count"
+          description: "IPQuorum server has {{ $value }} goroutines (threshold: 1000)"
+          
+      # Database Alerts
+      - alert: IPQuorumDatabaseConnectionFailure
+        expr: increase(ipquorum_db_errors_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "Database connection failures"
+          description: "{{ $value }} database errors in the last 5 minutes"
+          
+      # Health Check Alerts
+      - alert: IPQuorumHealthCheckFailing
+        expr: up{job="ipquorum"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: platform
+        annotations:
+          summary: "IPQuorum server is down"
+          description: "IPQuorum server health check is failing"
+          
+      - alert: IPQuorumHighRequestRate
+        expr: rate(ipquorum_api_requests_total[5m]) > 100
+        for: 10m
+        labels:
+          severity: info
+          component: api
+        annotations:
+          summary: "High API request rate"
+          description: "API is receiving {{ $value }} requests per second"
+          
+      # Authentication Alerts
+      - alert: IPQuorumHighAuthFailureRate
+        expr: rate(ipquorum_api_requests_total{path="/auth/login",status="401"}[5m]) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          component: security
+        annotations:
+          summary: "High authentication failure rate"
+          description: "{{ $value }} failed login attempts per second. Possible brute force attack."
+          
+      - alert: IPQuorumSuspiciousAuthActivity
+        expr: rate(ipquorum_api_requests_total{path="/auth/login",status="401"}[1m]) > 5
+        for: 1m
+        labels:
+          severity: critical
+          component: security
+        annotations:
+          summary: "Suspicious authentication activity"
+          description: "{{ $value }} failed login attempts per second. Likely brute force attack in progress."
+
+  - name: ipquorum_recording_rules
+    interval: 30s
+    rules:
+      # Recording rules for frequently used queries
+      - record: ipquorum:api_request_rate:5m
+        expr: rate(ipquorum_api_requests_total[5m])
+        
+      - record: ipquorum:api_error_rate:5m
+        expr: rate(ipquorum_api_requests_total{status=~"5.."}[5m])
+        
+      - record: ipquorum:api_latency_p95:5m
+        expr: histogram_quantile(0.95, rate(ipquorum_api_request_duration_seconds_bucket[5m]))
+        
+      - record: ipquorum:api_latency_p99:5m
+        expr: histogram_quantile(0.99, rate(ipquorum_api_request_duration_seconds_bucket[5m]))
+        
+      - record: ipquorum:instances_health_ratio
+        expr: ipquorum_instances_active / ipquorum_instances_total
+
+

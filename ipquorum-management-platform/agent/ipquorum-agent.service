@@ -1,0 +1,33 @@
+[Unit]
+Description=IPQuorum Management Agent
+Documentation=https://github.com/olemyk/ipquorum-platform
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+
+# Agent binary and configuration
+ExecStart=/usr/local/bin/ipquorum-agent --config /etc/ipquorum-agent/config.yaml
+
+# Restart policy
+Restart=on-failure
+RestartSec=5s
+
+# Security settings
+NoNewPrivileges=false
+PrivateTmp=true
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ipquorum-agent
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target

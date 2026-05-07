@@ -1,0 +1,65 @@
+# Multi-stage build for IP Quorum Management Platform
+FROM golang:1.23-alpine AS builder
+
+# Install build dependencies including gcc for CGO (required by SQLite)
+RUN apk add --no-cache git make bash gcc musl-dev sqlite-dev
+
+# Set working directory
+WORKDIR /build
+
+# Copy go mod files
+COPY server/go.mod server/go.sum ./
+RUN go mod download
+
+# Copy source code
+COPY server/ ./
+
+# Build the application
+RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -ldflags="-s -w" -o ipquorum-server ./cmd/server
+
+# Final stage
+FROM alpine:latest
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    bash \
+    curl \
+    jq \
+    ca-certificates \
+    sqlite \
+    tzdata
+
+# Create app user
+RUN addgroup -g 1000 ipquorum && \
+    adduser -D -u 1000 -G ipquorum ipquorum
+
+# Create directories
+RUN mkdir -p /app /data /scripts /config && \
+    chown -R ipquorum:ipquorum /app /data /scripts /config
+
+# Copy binary from builder
+COPY --from=builder /build/ipquorum-server /app/
+
+# Copy mock scripts for testing
+COPY test-scripts/ipquorum-instance-manager.sh /scripts/
+RUN chmod +x /scripts/ipquorum-instance-manager.sh
+
+# Copy default config
+COPY test-config/config.yaml /config/
+
+# Set working directory
+WORKDIR /app
+
+# Switch to app user
+USER ipquorum
+
+# Expose port
+EXPOSE 8443
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8443/health || exit 1
+
+# Run the application
+ENTRYPOINT ["/app/ipquorum-server"]
+CMD ["--config", "/config/config.yaml", "--debug"]

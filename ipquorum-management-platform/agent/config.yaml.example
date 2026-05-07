@@ -1,0 +1,31 @@
+# IPQuorum Agent Configuration
+
+agent:
+  # Port to listen on
+  port: 9090
+  
+  # Host to bind to (0.0.0.0 for all interfaces)
+  host: "0.0.0.0"
+  
+  # API key for authentication (CHANGE THIS!)
+  api_key: "your-secure-api-key-here"
+  
+  # Log level: debug, info, warn, error
+  log_level: "info"
+  
+  # Instance name (identifies this agent)
+  instance_name: "ipquorum-agent-01"
+
+server:
+  # Management server URL (optional, for future use)
+  url: "https://management-server:8080"
+  
+  # Allow insecure TLS connections
+  insecure: false
+
+script:
+  # Path to the IPQuorum instance manager script
+  path: "/usr/local/bin/ipquorum-instance-manager.sh"
+  
+  # Command timeout in seconds
+  timeout: 300
