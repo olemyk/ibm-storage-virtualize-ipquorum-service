@@ -10,7 +10,7 @@
 # Options:
 #   --docker          Use Docker (default if available)
 #   --podman          Use Podman
-#   --version VERSION Specify version to deploy (default: v3.0.0)
+#   --version VERSION Specify version to deploy (default: v3.0.1)
 #   --monitoring      Enable monitoring stack (Prometheus + Grafana)
 #   --update          Update existing deployment
 #   --stop            Stop all services
@@ -29,7 +29,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Default configuration
-VERSION="${VERSION:-v3.0.0}"
+VERSION="${VERSION:-v3.0.1}"
 CONTAINER_RUNTIME=""
 COMPOSE_CMD=""
 ENABLE_MONITORING=false
