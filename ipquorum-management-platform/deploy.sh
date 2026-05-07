@@ -223,21 +223,15 @@ download_configs() {
 
 # Function to update image versions in compose file
 update_image_versions() {
-    print_info "Updating image versions to $VERSION..."
+    print_info "Using image versions from docker-compose file..."
     
     cd "$DEPLOYMENT_DIR"
     
-    # Update manager image version
-    sed -i "s|image: .*ipquorum-manager.*|image: $MANAGER_IMAGE:$VERSION|" "$COMPOSE_FILE"
-    sed -i "s|image: .*ipquorum-platform.*|image: $MANAGER_IMAGE:$VERSION|" "$COMPOSE_FILE"
+    # Note: We don't modify the docker-compose file anymore to avoid YAML syntax issues
+    # The docker-compose.prod.yml file already has the correct image versions
+    # Users can manually edit the file if they need different versions
     
-    # Update web image version
-    sed -i "s|image: .*ipquorum-web.*|image: $WEB_IMAGE:$VERSION|" "$COMPOSE_FILE"
-    
-    # Update labels
-    sed -i "s|com.ipquorum.version=.*|com.ipquorum.version=$VERSION|" "$COMPOSE_FILE"
-    
-    print_success "Image versions updated to $VERSION"
+    print_success "Image versions ready"
 }
 
 # Function to pull container images
