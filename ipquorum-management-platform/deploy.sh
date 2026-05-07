@@ -192,9 +192,16 @@ download_configs() {
     # Download .env template if not exists
     if [[ ! -f ".env" ]]; then
         print_info "Downloading .env template..."
-        curl -fsSL -o ".env" \
+        curl -fsSL -o ".env.tmp" \
             "https://raw.githubusercontent.com/olemyk/ibm-storage-virtualize-ipquorum-service/main/ipquorum-management-platform/.env.example" \
             || print_warning "Failed to download .env template."
+        
+        # Strip comments and empty lines for podman-compose compatibility
+        if [[ -f ".env.tmp" ]]; then
+            print_info "Creating clean .env file (removing comments for podman-compose)..."
+            grep -v '^#' .env.tmp | grep -v '^$' | grep '=' > .env
+            rm -f .env.tmp
+        fi
         
         # Generate secure secrets
         if command -v openssl &> /dev/null; then
