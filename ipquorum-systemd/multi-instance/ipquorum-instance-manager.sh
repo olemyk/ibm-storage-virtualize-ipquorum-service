@@ -231,10 +231,11 @@ cmd_create() {
     echo -e "${CYAN}========================================${NC}"
     echo ""
     
-    # Interactive configuration
-    local description storage_system storage_location ipquorum_name api_endpoint username password
+    # Interactive configuration - initialize all variables with defaults
+    local description="" storage_system="" storage_location="" ipquorum_name=""
+    local api_endpoint="" username="" password=""
     local enable_download="true" enable_mkquorumapp="false"
-    local partnersystem ip6="false" partnerip6="false" nometadata="false"
+    local partnersystem="" ip6="false" partnerip6="false" nometadata="false"
     
     if [[ "$interactive" == "yes" ]]; then
         # Basic information
@@ -443,10 +444,30 @@ cmd_delete() {
     check_root
     
     local name="${1:-}"
+    local force=false
+    local delete_data=false
+    
+    # Parse arguments
+    shift || true
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --force)
+                force=true
+                shift
+                ;;
+            --delete-data)
+                delete_data=true
+                shift
+                ;;
+            *)
+                shift
+                ;;
+        esac
+    done
     
     if [[ -z "$name" ]]; then
         print_error "Instance name is required"
-        echo "Usage: $0 delete <instance-name>"
+        echo "Usage: $0 delete <instance-name> [--force] [--delete-data]"
         exit 1
     fi
     
@@ -455,11 +476,13 @@ cmd_delete() {
         exit 1
     fi
     
-    # Confirm deletion
-    read -p "Are you sure you want to delete instance '$name'? (yes/no): " -r
-    if [[ ! $REPLY =~ ^[Yy][Ee][Ss]$ ]]; then
-        print_info "Deletion cancelled"
-        exit 0
+    # Confirm deletion (skip if --force)
+    if [[ "$force" != "true" ]]; then
+        read -p "Are you sure you want to delete instance '$name'? (yes/no): " -r
+        if [[ ! $REPLY =~ ^[Yy][Ee][Ss]$ ]]; then
+            print_info "Deletion cancelled"
+            exit 0
+        fi
     fi
     
     print_info "Deleting instance: $name"
@@ -483,13 +506,24 @@ cmd_delete() {
     rm -f "${PASSWORDS_DIR}/${name}.password"
     print_success "Password file removed"
     
-    # Ask about data and logs
-    read -p "Delete instance data and logs? (yes/no): " -r
-    if [[ $REPLY =~ ^[Yy][Ee][Ss]$ ]]; then
+    # Handle data and logs
+    if [[ "$force" == "true" && "$delete_data" == "true" ]]; then
+        # Force mode with --delete-data: remove without asking
         rm -rf "${DATA_DIR}/${name}"
         rm -rf "${LOG_DIR}/${name}"
         print_success "Data and logs removed"
+    elif [[ "$force" != "true" ]]; then
+        # Interactive mode: ask user
+        read -p "Delete instance data and logs? (yes/no): " -r
+        if [[ $REPLY =~ ^[Yy][Ee][Ss]$ ]]; then
+            rm -rf "${DATA_DIR}/${name}"
+            rm -rf "${LOG_DIR}/${name}"
+            print_success "Data and logs removed"
+        else
+            print_info "Data and logs preserved in ${DATA_DIR}/${name} and ${LOG_DIR}/${name}"
+        fi
     else
+        # Force mode without --delete-data: preserve data
         print_info "Data and logs preserved in ${DATA_DIR}/${name} and ${LOG_DIR}/${name}"
     fi
     

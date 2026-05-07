@@ -52,7 +52,7 @@ type AgentConfig struct {
 func Default() *Config {
 	return &Config{
 		Server: ServerConfig{
-			Port:                8443,
+			Port:                8080,
 			Host:                "0.0.0.0",
 			TLSCert:             "/etc/ipquorum-platform/tls/server.crt",
 			TLSKey:              "/etc/ipquorum-platform/tls/server.key",
@@ -61,7 +61,7 @@ func Default() *Config {
 		},
 		Database: DatabaseConfig{
 			Type: "sqlite",
-			Path: "/var/lib/ipquorum-platform/ipquorum.db",
+			Path: "/data/ipquorum.db",
 		},
 		Auth: AuthConfig{
 			JWTSecret:     generateSecret(),
@@ -72,31 +72,44 @@ func Default() *Config {
 			Port:            8444,
 			TLSCert:         "/etc/ipquorum-platform/tls/agent.crt",
 			TLSKey:          "/etc/ipquorum-platform/tls/agent.key",
-			ScriptsDir:      "/opt/ipquorum/scripts",
+			ScriptsDir:      "/app/scripts",
 			HealthInterval:  30,
 			MetricsInterval: 60,
 		},
 	}
 }
 
-// Load loads configuration from file
+// Load loads configuration from file or environment variables
 func Load(path string) (*Config, error) {
-	viper.SetConfigFile(path)
-	viper.SetConfigType("yaml")
-
 	// Set defaults
 	cfg := Default()
 
-	// Read config file
+	// Try to read config file if it exists
+	viper.SetConfigFile(path)
+	viper.SetConfigType("yaml")
+
+	// Enable environment variable support
+	viper.SetEnvPrefix("IPQUORUM")
+	viper.AutomaticEnv()
+
+	// Map environment variables to config fields
+	viper.BindEnv("server.port", "SERVER_PORT")
+	viper.BindEnv("server.host", "SERVER_HOST")
+	viper.BindEnv("server.log_level", "LOG_LEVEL")
+	viper.BindEnv("database.path", "DB_PATH")
+	viper.BindEnv("database.type", "DB_TYPE")
+	viper.BindEnv("auth.jwt_secret", "JWT_SECRET")
+	viper.BindEnv("auth.token_expiry", "JWT_EXPIRATION")
+	viper.BindEnv("agent.scripts_dir", "SCRIPTS_DIR")
+
+	// Try to read config file
 	if err := viper.ReadInConfig(); err != nil {
-		// If config file doesn't exist, use defaults
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			return cfg, nil
-		}
-		return nil, fmt.Errorf("failed to read config: %w", err)
+		// If config file doesn't exist or can't be read, that's OK - we'll use env vars and defaults
+		// Only log the error, don't fail
+		fmt.Printf("Config file not found or unreadable (%s), using environment variables and defaults\n", path)
 	}
 
-	// Unmarshal config
+	// Unmarshal config (will use env vars if file wasn't read)
 	if err := viper.Unmarshal(cfg); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
