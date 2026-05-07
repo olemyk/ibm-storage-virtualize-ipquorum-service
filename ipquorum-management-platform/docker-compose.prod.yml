@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # Backend API Server
   ipquorum-server:
-    image: localhost/ipquorum-platform:v2.0.8
+    image: ghcr.io/olemyk/ipquorum-manager:v3.0.0
     container_name: ipquorum-server
     ports:
       - "8443:8080"
@@ -48,11 +48,15 @@ services:
       - ipquorum-network
     labels:
       - "com.ipquorum.service=api-server"
-      - "com.ipquorum.version=2.0.8"
+      - "com.ipquorum.version=3.0.0"
+      - "com.ipquorum.component=manager"
+      - "org.opencontainers.image.source=https://github.com/olemyk/ibm-storage-virtualize-ipquorum-service"
+      - "org.opencontainers.image.description=IP Quorum Management Platform - Backend API Server"
+      - "org.opencontainers.image.licenses=Apache-2.0"
 
   # Frontend Web Dashboard
   ipquorum-web:
-    image: localhost/ipquorum-web:v2.0.8
+    image: ghcr.io/olemyk/ipquorum-web:v3.0.0
     container_name: ipquorum-web
     ports:
       - "${WEB_PORT:-3000}:80"
@@ -73,7 +77,11 @@ services:
       - ipquorum-network
     labels:
       - "com.ipquorum.service=web-dashboard"
-      - "com.ipquorum.version=1.0.0"
+      - "com.ipquorum.version=3.0.0"
+      - "com.ipquorum.component=web"
+      - "org.opencontainers.image.source=https://github.com/olemyk/ibm-storage-virtualize-ipquorum-service"
+      - "org.opencontainers.image.description=IP Quorum Management Platform - Web Dashboard"
+      - "org.opencontainers.image.licenses=Apache-2.0"
 
   # Prometheus (Metrics Collection)
   prometheus:
