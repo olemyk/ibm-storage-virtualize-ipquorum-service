@@ -185,7 +185,7 @@ download_configs() {
     if [[ ! -f "$COMPOSE_FILE" ]] || [[ "$ACTION" == "update" ]]; then
         print_info "Downloading $COMPOSE_FILE..."
         curl -fsSL -o "$COMPOSE_FILE" \
-            "https://raw.githubusercontent.com/olemyk/ibm-storage-virtualize-ipquorum-service/main/ipquorum-management-platform/$COMPOSE_FILE" \
+            "https://raw.githubusercontent.com/olemyk/ibm-storage-virtualize-ipquorum-service/Major-update-to-the-ipquorum-/ipquorum-management-platform/$COMPOSE_FILE" \
             || print_warning "Failed to download $COMPOSE_FILE. Using existing file if available."
     fi
     
@@ -193,7 +193,7 @@ download_configs() {
     if [[ ! -f ".env" ]]; then
         print_info "Downloading .env template..."
         curl -fsSL -o ".env.tmp" \
-            "https://raw.githubusercontent.com/olemyk/ibm-storage-virtualize-ipquorum-service/main/ipquorum-management-platform/.env.example" \
+            "https://raw.githubusercontent.com/olemyk/ibm-storage-virtualize-ipquorum-service/Major-update-to-the-ipquorum-/ipquorum-management-platform/.env.example" \
             || print_warning "Failed to download .env template."
         
         # Strip comments and empty lines for podman-compose compatibility
