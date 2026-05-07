@@ -5,6 +5,41 @@ All notable changes to the IP Quorum Management Platform will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.1] - 2026-05-07
+
+### Added
+- **Container Deployment Automation**: Complete CI/CD and deployment infrastructure
+  - GitHub Actions workflow for automated builds and publishing to GitHub Container Registry
+  - Multi-platform container builds (linux/amd64, linux/arm64)
+  - Automated testing and security scanning with Trivy
+  - Semantic versioning from git tags
+- **Comprehensive Deployment Documentation** (2,300+ lines)
+  - DEPLOYMENT-GUIDE.md: General deployment guide with HA, Kubernetes, monitoring
+  - DOCKER-DEPLOYMENT.md: Docker-specific deployment instructions
+  - PODMAN-DEPLOYMENT.md: Podman-specific deployment with rootless containers
+  - AGENT-DEPLOYMENT-GUIDE.md: Agent deployment and configuration
+  - MANAGER-AGENT-CONNECTION-GUIDE.md: Connection setup between manager and agents
+- **Automated Deployment Script** (deploy.sh)
+  - Auto-detection of Docker or Podman
+  - Interactive deployment with colored output
+  - Automatic image pulling from GitHub Packages
+  - Environment setup with secure secret generation
+  - Health validation and backup support
+  - Multiple actions: deploy, update, stop, status, logs
+
+### Changed
+- Updated docker-compose.prod.yml to use GitHub Container Registry images
+  - `ghcr.io/olemyk/ipquorum-manager:v3.0.1`
+  - `ghcr.io/olemyk/ipquorum-web:v3.0.1`
+- Added proper OCI labels and metadata to container images
+- Enhanced version tracking in container configurations
+
+### Infrastructure
+- Production-ready deployment with one-command installation
+- Automated CI/CD pipeline for continuous delivery
+- Security-first approach with rootless containers and secrets management
+- Platform-agnostic deployment (Docker and Podman support)
+
 ## [3.0.0] - 2026-05-07
 
 ### Added
