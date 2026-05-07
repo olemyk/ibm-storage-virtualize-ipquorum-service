@@ -40,12 +40,8 @@ RUN mkdir -p /app /data /scripts /config && \
 # Copy binary from builder
 COPY --from=builder /build/ipquorum-server /app/
 
-# Copy mock scripts for testing
-COPY test-scripts/ipquorum-instance-manager.sh /scripts/
-RUN chmod +x /scripts/ipquorum-instance-manager.sh
-
-# Copy default config
-COPY test-config/config.yaml /config/
+# Copy default config (optional - can be mounted at runtime)
+COPY --chown=ipquorum:ipquorum server/config.yaml /config/config.yaml.example
 
 # Set working directory
 WORKDIR /app
@@ -61,5 +57,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8443/health || exit 1
 
 # Run the application
+# Config can be provided via volume mount at /config/config.yaml
+# or through environment variables
 ENTRYPOINT ["/app/ipquorum-server"]
-CMD ["--config", "/config/config.yaml", "--debug"]
+CMD []
