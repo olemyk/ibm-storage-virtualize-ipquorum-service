@@ -72,8 +72,7 @@ services:
       - NGINX_WORKER_PROCESSES=${NGINX_WORKER_PROCESSES:-auto}
       - NGINX_WORKER_CONNECTIONS=${NGINX_WORKER_CONNECTIONS:-1024}
     depends_on:
-      ipquorum-server:
-        condition: service_healthy
+      - ipquorum-server
     healthcheck:
       test:
         - "CMD"
