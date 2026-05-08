@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # Backend API Server
   ipquorum-server:
-    image: ghcr.io/olemyk/ipquorum-manager:3.0.2
+    image: ghcr.io/olemyk/ipquorum-manager:3.0.3
     container_name: ipquorum-server
     ports:
       - "8443:8080"
@@ -64,7 +64,7 @@ services:
 
   # Frontend Web Dashboard
   ipquorum-web:
-    image: ghcr.io/olemyk/ipquorum-web:3.0.2
+    image: ghcr.io/olemyk/ipquorum-web:3.0.3
     container_name: ipquorum-web
     ports:
       - "${WEB_PORT:-3000}:80"
