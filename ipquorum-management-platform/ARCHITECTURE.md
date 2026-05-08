@@ -23,42 +23,88 @@ A modern Go-based management platform for IBM Storage Virtualize IP Quorum servi
 ## Target Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    IP Quorum Management Platform                │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  ┌──────────────────┐         ┌──────────────────┐            │
-│  │  Web Dashboard   │◄────────┤   REST API       │            │
-│  │  (React + TS)    │         │   (Go + Gin)     │            │
-│  └──────────────────┘         └──────────────────┘            │
-│           │                            │                        │
-│           │ WebSocket                  │ HTTP/JSON              │
-│           ▼                            ▼                        │
-│  ┌─────────────────────────────────────────────────┐          │
-│  │         Management Server (Go)                   │          │
-│  ├─────────────────────────────────────────────────┤          │
-│  │ • Instance Management                            │          │
-│  │ • Configuration Management                       │          │
-│  │ • Health Monitoring                              │          │
-│  │ • Metrics Collection                             │          │
-│  │ • Multi-Server Orchestration                     │          │
-│  │ • Authentication & Authorization                 │          │
-│  └─────────────────────────────────────────────────┘          │
-│           │                            │                        │
-│           │                            │                        │
-│           ▼                            ▼                        │
-│  ┌──────────────────┐         ┌──────────────────┐            │
-│  │  Local Agent     │         │   Database       │            │
-│  │  (Go Binary)     │         │   (SQLite/Bolt)  │            │
-│  └──────────────────┘         └──────────────────┘            │
-│           │                                                     │
-│           ▼                                                     │
-│  ┌──────────────────────────────────────────────┐             │
-│  │  Existing Bash Scripts (Backward Compatible) │             │
-│  │  ├─ ipquorum-instance-manager.sh             │             │
-│  │  └─ Systemd Services                         │             │
-│  └──────────────────────────────────────────────┘             │
-└─────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────┐
+│                    IP Quorum Management Platform                           │
+│                         Network Flow & Ports                               │
+├────────────────────────────────────────────────────────────────────────────┤
+│                                                                            │
+│  ┌──────────────────────┐                                                 │
+│  │   End Users          │                                                 │
+│  │   (Web Browsers)     │                                                 │
+│  └──────────────────────┘                                                 │
+│           │                                                                │
+│           │ HTTPS/TCP                                                     │
+│           │ Port 3000 (Web UI)                                            │
+│           │ Port 8443 (API)                                               │
+│           ▼                                                                │
+│  ┌─────────────────────────────────────────────────────────────────┐     │
+│  │                    Container Network                             │     │
+│  │  ┌──────────────────┐         ┌──────────────────┐             │     │
+│  │  │  Web Dashboard   │◄────────┤  Management API  │             │     │
+│  │  │  (Nginx + React) │  HTTP   │  (Go + Gin)      │             │     │
+│  │  │  Port: 80        │  TCP    │  Port: 8080      │             │     │
+│  │  └──────────────────┘         └──────────────────┘             │     │
+│  │           │                            │                         │     │
+│  │           │ HTTP/TCP                   │ HTTP/JSON/TCP           │     │
+│  │           │ Internal                   │ Internal                │     │
+│  │           ▼                            ▼                         │     │
+│  │  ┌─────────────────────────────────────────────────┐           │     │
+│  │  │         Management Server (Go)                   │           │     │
+│  │  ├─────────────────────────────────────────────────┤           │     │
+│  │  │ • Instance Management                            │           │     │
+│  │  │ • Configuration Management                       │           │     │
+│  │  │ • Health Monitoring                              │           │     │
+│  │  │ • Metrics Collection (Prometheus)                │           │     │
+│  │  │ • Multi-Server Orchestration                     │           │     │
+│  │  │ • Authentication & Authorization (JWT)           │           │     │
+│  │  │ • WebSocket Support (Real-time updates)          │           │     │
+│  │  └─────────────────────────────────────────────────┘           │     │
+│  │           │                            │                         │     │
+│  │           │ gRPC/TCP                   │ SQLite                  │     │
+│  │           │ Port: 9090                 │ File I/O                │     │
+│  │           ▼                            ▼                         │     │
+│  │  ┌──────────────────┐         ┌──────────────────┐             │     │
+│  │  │  Remote Agents   │         │   Database       │             │     │
+│  │  │  (Go Binary)     │         │   (SQLite)       │             │     │
+│  │  │  Port: 9090      │         │   /data/         │             │     │
+│  │  └──────────────────┘         └──────────────────┘             │     │
+│  └─────────────────────────────────────────────────────────────────┘     │
+│           │                                                                │
+│           │ HTTPS/TCP                                                     │
+│           │ Port: 7443 (SVC REST API)                                     │
+│           │ Port: 1260 (IP Quorum Service)                                │
+│           ▼                                                                │
+│  ┌──────────────────────────────────────────────┐                        │
+│  │  IBM Storage Virtualize Systems              │                        │
+│  │  ├─ REST API (Port 7443/TCP)                 │                        │
+│  │  ├─ IP Quorum Service (Port 1260/TCP)        │                        │
+│  │  └─ Management Interface                     │                        │
+│  └──────────────────────────────────────────────┘                        │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+Network Ports Summary:
+┌──────────────────┬──────────┬──────────┬─────────────────────────────────┐
+│ Component        │ Port     │ Protocol │ Purpose                         │
+├──────────────────┼──────────┼──────────┼─────────────────────────────────┤
+│ Web Dashboard    │ 3000     │ TCP      │ HTTPS - User Interface          │
+│ Management API   │ 8443     │ TCP      │ HTTPS - REST API (External)     │
+│ Management API   │ 8080     │ TCP      │ HTTP - REST API (Internal)      │
+│ Remote Agent     │ 9090     │ TCP      │ gRPC - Agent Communication      │
+│ Prometheus       │ 9091     │ TCP      │ HTTP - Metrics Scraping         │
+│ Grafana          │ 3001     │ TCP      │ HTTP - Monitoring Dashboard     │
+│ SVC REST API     │ 7443     │ TCP      │ HTTPS - Storage System API      │
+│ IP Quorum Svc    │ 1260     │ TCP      │ TCP - Quorum Service Protocol   │
+└──────────────────┴──────────┴──────────┴─────────────────────────────────┘
+
+Data Flow:
+1. User → Web Dashboard (Port 3000/TCP) → Management API (Port 8080/TCP)
+2. Management API → Database (SQLite file I/O)
+3. Management API → Remote Agents (Port 9090/TCP gRPC)
+4. Remote Agents → IBM SVC REST API (Port 7443/TCP HTTPS)
+5. IBM SVC → IP Quorum Service (Port 1260/TCP)
+6. Prometheus → Management API (Port 8080/TCP /metrics endpoint)
+7. Grafana → Prometheus (Port 9091/TCP)
 ```
 
 ## Component Architecture
