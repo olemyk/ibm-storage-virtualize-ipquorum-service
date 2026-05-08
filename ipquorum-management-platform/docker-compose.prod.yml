@@ -37,6 +37,7 @@ services:
       - ./data:/data
       - ./scripts:/app/scripts:ro
       - ./logs:/var/log/ipquorum
+      - ./tls:/etc/ipquorum-platform/tls:ro
     healthcheck:
       test:
         - "CMD"
