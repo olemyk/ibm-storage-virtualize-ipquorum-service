@@ -5,6 +5,55 @@ All notable changes to the IP Quorum Management Platform will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.2] - 2026-05-08
+
+### Fixed
+- **Critical: Web Dashboard Login Issue (HTTP 400)**
+  - Fixed nginx proxy configuration to use HTTPS port 8443 instead of HTTP port 8080
+  - Added `proxy_ssl_verify off` for self-signed certificates
+  - Updated all proxy endpoints (/api/, /health, /metrics) to use correct backend URL
+  - Web dashboard login now works correctly with admin/admin123 credentials
+
+- **Configuration File Requirement**
+  - Made config.yaml file optional for container deployments
+  - Added environment variable support as fallback configuration method
+  - Updated config.Load() to use viper.AutomaticEnv() for environment variable binding
+  - Containers can now run with environment variables only (no config file needed)
+
+- **SELinux Volume Mount Issues (RHEL/CentOS/Fedora)**
+  - Added automatic SELinux context setting in deployment script
+  - Applied `svirt_sandbox_file_t` context to data, logs, and tls directories
+  - Fixed "Permission denied" errors on RHEL 9.4 and similar systems
+
+- **Container Permissions**
+  - Fixed database write permissions for container user (UID 1000)
+  - Added proper ownership setting in deployment script
+  - Resolved "attempt to write a readonly database" errors
+
+- **TLS Certificate Generation**
+  - Added automatic self-signed certificate generation in deployment script
+  - Certificates include proper SANs (localhost, ipquorum-server, 127.0.0.1)
+  - Fixed "TLS certificate not found" startup errors
+
+### Changed
+- **Deployment Script Enhancements (deploy.sh)**
+  - Updated default version to 3.0.2
+  - Added `generate_tls_certificates()` function for automatic cert generation
+  - Enhanced `create_directories()` with SELinux context handling
+  - Added tls directory to deployment structure
+  - Updated default credentials documentation (admin/admin123)
+  - Improved error messages and warnings for common issues
+
+- **Container Configuration**
+  - Changed default server port from 8443 to 8080 in config defaults
+  - Updated default paths to match container volume mounts
+  - Removed hardcoded config file requirement
+
+### Infrastructure
+- All fixes tested and validated on RHEL 9.4 with Podman
+- Production-ready deployment with automatic issue resolution
+- Enhanced compatibility with rootless containers and SELinux
+
 ## [3.0.1] - 2026-05-07
 
 ### Added

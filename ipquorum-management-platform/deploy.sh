@@ -10,7 +10,7 @@
 # Options:
 #   --docker          Use Docker (default if available)
 #   --podman          Use Podman
-#   --version VERSION Specify version to deploy (default: v3.0.1)
+#   --version VERSION Specify version to deploy (default: 3.0.2)
 #   --monitoring      Enable monitoring stack (Prometheus + Grafana)
 #   --update          Update existing deployment
 #   --stop            Stop all services
@@ -29,7 +29,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Default configuration
-VERSION="${VERSION:-v3.0.1}"
+VERSION="${VERSION:-3.0.2}"
 CONTAINER_RUNTIME=""
 COMPOSE_CMD=""
 ENABLE_MONITORING=false
@@ -165,11 +165,18 @@ check_prerequisites() {
 create_directories() {
     print_info "Creating directory structure..."
     
-    mkdir -p "$DEPLOYMENT_DIR"/{data,logs,config,scripts,backups}
+    mkdir -p "$DEPLOYMENT_DIR"/{data,logs,config,scripts,backups,tls}
     
     # Set appropriate permissions
     if [[ $EUID -eq 0 ]]; then
         chown -R 1000:1000 "$DEPLOYMENT_DIR"/{data,logs}
+        
+        # Fix SELinux context for RHEL/CentOS/Fedora
+        if command -v chcon &> /dev/null && [[ -f /etc/selinux/config ]]; then
+            print_info "Applying SELinux context for container volumes..."
+            chcon -Rt svirt_sandbox_file_t "$DEPLOYMENT_DIR"/{data,logs,tls} 2>/dev/null || \
+                print_warning "Failed to set SELinux context. You may need to run: sudo chcon -Rt svirt_sandbox_file_t $DEPLOYMENT_DIR/{data,logs,tls}"
+        fi
     fi
     
     print_success "Directory structure created at $DEPLOYMENT_DIR"
@@ -219,6 +226,49 @@ download_configs() {
     fi
     
     print_success "Configuration files ready"
+}
+
+# Function to generate TLS certificates
+generate_tls_certificates() {
+    print_info "Checking TLS certificates..."
+    
+    local tls_dir="$DEPLOYMENT_DIR/tls"
+    local cert_file="$tls_dir/server.crt"
+    local key_file="$tls_dir/server.key"
+    
+    if [[ -f "$cert_file" ]] && [[ -f "$key_file" ]]; then
+        print_info "TLS certificates already exist"
+        return 0
+    fi
+    
+    if ! command -v openssl &> /dev/null; then
+        print_warning "OpenSSL not found. Skipping TLS certificate generation."
+        print_warning "The server will fail to start without TLS certificates."
+        return 1
+    fi
+    
+    print_info "Generating self-signed TLS certificates..."
+    
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+        -keyout "$key_file" \
+        -out "$cert_file" \
+        -subj "/C=US/ST=State/L=City/O=IPQuorum/CN=localhost" \
+        -addext "subjectAltName=DNS:localhost,DNS:ipquorum-server,IP:127.0.0.1" \
+        2>/dev/null
+    
+    if [[ $? -eq 0 ]]; then
+        chmod 600 "$key_file"
+        chmod 644 "$cert_file"
+        
+        if [[ $EUID -eq 0 ]]; then
+            chown 1000:1000 "$key_file" "$cert_file"
+        fi
+        
+        print_success "TLS certificates generated successfully"
+    else
+        print_error "Failed to generate TLS certificates"
+        return 1
+    fi
 }
 
 # Function to update image versions in compose file
@@ -426,7 +476,7 @@ ${BLUE}Access Information:${NC}
   
 ${BLUE}Default Credentials:${NC}
   Username: admin
-  Password: changeme
+  Password: admin123
   
 ${YELLOW}⚠️  IMPORTANT: Change the default password immediately!${NC}
 
@@ -531,6 +581,7 @@ main() {
     check_prerequisites
     create_directories
     download_configs
+    generate_tls_certificates
     update_image_versions
     
     if [[ "$ACTION" == "update" ]]; then
