@@ -29,7 +29,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Default configuration
-VERSION="${VERSION:-3.0.3}"
+VERSION="${VERSION:-3.0.4}"
 CONTAINER_RUNTIME=""
 COMPOSE_CMD=""
 ENABLE_MONITORING=false
