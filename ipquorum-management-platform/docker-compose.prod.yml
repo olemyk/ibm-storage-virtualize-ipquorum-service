@@ -13,7 +13,7 @@ services:
       
       # Security
       - JWT_SECRET=${JWT_SECRET:-change-this-secret-in-production}
-      - JWT_EXPIRATION=${JWT_EXPIRATION:-24h}
+      - JWT_EXPIRATION=${JWT_EXPIRATION:-86400}
       
       # Logging
       - LOG_LEVEL=${LOG_LEVEL:-info}
