@@ -139,6 +139,12 @@ func (d *Database) Migrate() error {
 		`ALTER TABLE instances ADD COLUMN partnerip6 BOOLEAN DEFAULT 0`,
 		`ALTER TABLE instances ADD COLUMN nometadata BOOLEAN DEFAULT 0`,
 
+		// Add started_at column for tracking instance start time
+		`ALTER TABLE instances ADD COLUMN started_at TIMESTAMP NULL`,
+
+		// Add last_health_check column for tracking last health check time
+		`ALTER TABLE instances ADD COLUMN last_health_check TIMESTAMP NULL`,
+
 		// Indexes for performance
 		`CREATE INDEX IF NOT EXISTS idx_instances_name ON instances(name)`,
 		`CREATE INDEX IF NOT EXISTS idx_instances_server_id ON instances(server_id)`,
@@ -148,6 +154,8 @@ func (d *Database) Migrate() error {
 		`CREATE INDEX IF NOT EXISTS idx_metrics_timestamp ON metrics(timestamp)`,
 		`CREATE INDEX IF NOT EXISTS idx_audit_log_user_id ON audit_log(user_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_audit_log_timestamp ON audit_log(timestamp)`,
+		`CREATE INDEX IF NOT EXISTS idx_instances_started_at ON instances(started_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_instances_last_health_check ON instances(last_health_check)`,
 	}
 
 	for _, migration := range migrations {
