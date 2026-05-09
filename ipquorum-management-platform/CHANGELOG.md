@@ -7,11 +7,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.7] - 2026-05-09
+
+### Fixed
+- **Deployment Script Health Check Protocol Mismatch**
+  - Fixed health check in deploy.sh to use HTTPS instead of HTTP
+  - Changed `curl -f http://localhost:8443/health` to `curl -fk https://localhost:8443/health`
+  - Added `-k` flag to skip certificate verification for self-signed certificates
+  - Fixed both `wait_for_services()` and `validate_deployment()` functions
+  - Resolves "API server health check failed" error during deployment validation
+
+### Changed
+- Updated deployment instructions to clarify API server uses HTTPS with self-signed certificate
+
+## [3.0.6] - 2026-05-09
+
+### Fixed
+- **Critical: Database Schema Migration Bug**
+  - Added missing `started_at` and `last_health_check` columns to migrations array
+  - Migration SQL files existed but were never added to hardcoded migrations in database.go
+  - Fixed "no such column: started_at" error on instances page
+  - Added indexes for new columns for better query performance
+
+### Technical Details
+- Migrations are hardcoded in `server/internal/storage/database.go`, not loaded from SQL files
+- Added ALTER TABLE statements for both columns with NULL support
+- Added CREATE INDEX statements for performance optimization
+
+## [3.0.5] - 2026-05-09
+
+### Fixed
+- **Critical: Container Networking Configuration**
+  - Fixed nginx proxy to use container name instead of localhost
+  - Changed `proxy_pass https://localhost:8080` to `proxy_pass https://ipquorum-server:8080`
+  - Containers in podman-compose pod use bridge networking with DNS resolution
+  - Web container can now successfully communicate with API server
+  - Login functionality now works correctly
+
+### Technical Details
+- Podman-compose creates pods with bridge networking, not shared network namespace
+- Containers resolve each other via DNS using container names
+- Internal port is 8080 (not the host-mapped 8443)
+
+## [3.0.4] - 2026-05-09
+
+### Fixed
+- **Port Configuration in Nginx**
+  - Changed nginx proxy from port 8443 to 8080 (internal container port)
+  - Server listens on internal port 8080, mapped to host port 8443
+  - Still had networking issues due to localhost vs container name
+
+## [3.0.3] - 2026-05-09
+
 ### Fixed
 - **Critical: JWT_EXPIRATION Configuration Error**
   - Changed JWT_EXPIRATION from "24h" (duration string) to 86400 (seconds as integer)
   - Fixed "cannot parse 'auth.token_expiry' as int" error preventing server startup
   - Updated both docker-compose.prod.yml and .env.example
+
+### Changed
+- Fixed GitHub Actions tag format (requires `v*.*.*` pattern, not `*.*.*`)
 
 ## [3.0.2] - 2026-05-08
 

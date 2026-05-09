@@ -353,7 +353,7 @@ wait_for_services() {
     local attempt=0
     
     while [[ $attempt -lt $max_attempts ]]; do
-        if curl -f http://localhost:8443/health &> /dev/null; then
+        if curl -fk https://localhost:8443/health &> /dev/null; then
             print_success "API server is healthy"
             break
         fi
@@ -428,8 +428,8 @@ validate_deployment() {
     
     local errors=0
     
-    # Check API health
-    if ! curl -f http://localhost:8443/health &> /dev/null; then
+    # Check API health (using HTTPS with -k for self-signed cert)
+    if ! curl -fk https://localhost:8443/health &> /dev/null; then
         print_error "API server health check failed"
         errors=$((errors + 1))
     else
@@ -472,7 +472,7 @@ ${GREEN}╔═══════════════════════
 
 ${BLUE}Access Information:${NC}
   Web Dashboard: http://localhost:3000
-  API Server:    http://localhost:8443
+  API Server:    https://localhost:8443 (self-signed certificate)
   
 ${BLUE}Default Credentials:${NC}
   Username: admin
