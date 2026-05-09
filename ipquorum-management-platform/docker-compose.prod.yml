@@ -68,9 +68,12 @@ services:
     container_name: ipquorum-web
     ports:
       - "${WEB_PORT:-3000}:80"
+      - "${WEB_HTTPS_PORT:-3443}:443"
     environment:
       - NGINX_WORKER_PROCESSES=${NGINX_WORKER_PROCESSES:-auto}
       - NGINX_WORKER_CONNECTIONS=${NGINX_WORKER_CONNECTIONS:-1024}
+    volumes:
+      - ./tls:/etc/nginx/ssl:ro
     depends_on:
       - ipquorum-server
     healthcheck:
@@ -80,7 +83,8 @@ services:
         - "--no-verbose"
         - "--tries=1"
         - "--spider"
-        - "http://localhost:80/"
+        - "--no-check-certificate"
+        - "https://localhost:443/"
       interval: 30s
       timeout: 10s
       retries: 3
@@ -90,7 +94,7 @@ services:
       - ipquorum-network
     labels:
       - "com.ipquorum.service=web-dashboard"
-      - "com.ipquorum.version=3.0.1"
+      - "com.ipquorum.version=3.0.7"
       - "com.ipquorum.component=web"
       - "org.opencontainers.image.source=https://github.com/olemyk/ibm-storage-virtualize-ipquorum-service"
       - "org.opencontainers.image.description=IP Quorum Management Platform - Web Dashboard"

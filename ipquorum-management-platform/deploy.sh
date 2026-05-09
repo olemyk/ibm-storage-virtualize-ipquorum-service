@@ -462,47 +462,49 @@ validate_deployment() {
 
 # Function to show post-deployment instructions
 show_instructions() {
-    cat << EOF
-
-${GREEN}╔════════════════════════════════════════════════════════════════╗
-║                                                                ║
-║  IP Quorum Management Platform Deployed Successfully!         ║
-║                                                                ║
-╚════════════════════════════════════════════════════════════════╝${NC}
-
-${BLUE}Access Information:${NC}
-  Web Dashboard: http://localhost:3000
-  API Server:    https://localhost:8443 (self-signed certificate)
-  
-${BLUE}Default Credentials:${NC}
-  Username: admin
-  Password: admin123
-  
-${YELLOW}⚠️  IMPORTANT: Change the default password immediately!${NC}
-
-${BLUE}Next Steps:${NC}
-  1. Access the web dashboard at http://localhost:3000
-  2. Login with default credentials
-  3. Navigate to Settings → Security and change password
-  4. Add your first server in Servers → Add Server
-  5. Create your first IP Quorum instance
-
-${BLUE}Useful Commands:${NC}
-  Check status:  $0 --status
-  View logs:     $0 --logs
-  Stop services: $0 --stop
-  Update:        $0 --update
-
-${BLUE}Documentation:${NC}
-  Deployment Guide: $DEPLOYMENT_DIR/DEPLOYMENT-GUIDE.md
-  Docker Guide:     $DEPLOYMENT_DIR/DOCKER-DEPLOYMENT.md
-  Podman Guide:     $DEPLOYMENT_DIR/PODMAN-DEPLOYMENT.md
-
-${BLUE}Support:${NC}
-  GitHub: https://github.com/olemyk/ibm-storage-virtualize-ipquorum-service
-  Issues: https://github.com/olemyk/ibm-storage-virtualize-ipquorum-service/issues
-
-EOF
+    echo -e ""
+    echo -e "${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${GREEN}║                                                                ║${NC}"
+    echo -e "${GREEN}║  IP Quorum Management Platform Deployed Successfully!         ║${NC}"
+    echo -e "${GREEN}║                                                                ║${NC}"
+    echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
+    echo -e ""
+    echo -e "${BLUE}Access Information:${NC}"
+    echo -e "  Web Dashboard (HTTPS): https://localhost:3443 ${GREEN}(Recommended)${NC}"
+    echo -e "  Web Dashboard (HTTP):  http://localhost:3000 ${YELLOW}(Redirects to HTTPS)${NC}"
+    echo -e "  API Server:            https://localhost:8443"
+    echo -e ""
+    echo -e "  ${YELLOW}Note: Self-signed certificates - accept security warning in browser${NC}"
+    echo -e ""
+    echo -e "${BLUE}Default Credentials:${NC}"
+    echo -e "  Username: admin"
+    echo -e "  Password: admin123"
+    echo -e ""
+    echo -e "${YELLOW}⚠️  IMPORTANT: Change the default password immediately!${NC}"
+    echo -e ""
+    echo -e "${BLUE}Next Steps:${NC}"
+    echo -e "  1. Access the web dashboard at https://localhost:3443"
+    echo -e "  2. Accept the self-signed certificate warning"
+    echo -e "  3. Login with default credentials"
+    echo -e "  4. Navigate to Settings → Security and change password"
+    echo -e "  5. Add your first server in Servers → Add Server"
+    echo -e "  6. Create your first IP Quorum instance"
+    echo -e ""
+    echo -e "${BLUE}Useful Commands:${NC}"
+    echo -e "  Check status:  $0 --status"
+    echo -e "  View logs:     $0 --logs"
+    echo -e "  Stop services: $0 --stop"
+    echo -e "  Update:        $0 --update"
+    echo -e ""
+    echo -e "${BLUE}Documentation:${NC}"
+    echo -e "  Deployment Guide: $DEPLOYMENT_DIR/DEPLOYMENT-GUIDE.md"
+    echo -e "  Docker Guide:     $DEPLOYMENT_DIR/DOCKER-DEPLOYMENT.md"
+    echo -e "  Podman Guide:     $DEPLOYMENT_DIR/PODMAN-DEPLOYMENT.md"
+    echo -e ""
+    echo -e "${BLUE}Support:${NC}"
+    echo -e "  GitHub: https://github.com/olemyk/ibm-storage-virtualize-ipquorum-service"
+    echo -e "  Issues: https://github.com/olemyk/ibm-storage-virtualize-ipquorum-service/issues"
+    echo -e ""
 }
 
 # Parse command line arguments

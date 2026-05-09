@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.8] - 2026-05-09
+
+### Added
+- **HTTPS Support for Web Dashboard**
+  - Added HTTPS listener on port 443 in nginx configuration
+  - HTTP (port 80) now redirects to HTTPS automatically
+  - Exposed port 3443 for HTTPS access (maps to container port 443)
+  - Added TLS certificate volume mount to web container
+  - Added HSTS (Strict-Transport-Security) header for enhanced security
+  - Updated healthcheck to use HTTPS
+
+### Fixed
+- **Deployment Script Color Code Display**
+  - Fixed raw ANSI escape sequences showing in output
+  - Changed from `cat << EOF` to `echo -e` for proper color rendering
+  - Success messages now display with proper green color
+  - All colored output now renders correctly
+
+### Changed
+- **Updated Access Instructions**
+  - Primary access now via HTTPS: https://localhost:3443
+  - HTTP access (port 3000) redirects to HTTPS
+  - Updated deployment instructions with HTTPS URLs
+  - Added note about accepting self-signed certificate warnings
+
+### Security
+- Enabled TLS 1.2 and 1.3 protocols
+- Added strong cipher configuration
+- Enabled SSL session caching
+- Added HSTS header with 1-year max-age
+
 ## [3.0.7] - 2026-05-09
 
 ### Fixed
