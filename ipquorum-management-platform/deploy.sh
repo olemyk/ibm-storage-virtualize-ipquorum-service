@@ -591,6 +591,11 @@ main() {
     fi
     
     pull_images
+    
+    # Export version variables for docker-compose
+    export MANAGER_VERSION="$VERSION"
+    export WEB_VERSION="$VERSION"
+    
     start_services
     wait_for_services
     
