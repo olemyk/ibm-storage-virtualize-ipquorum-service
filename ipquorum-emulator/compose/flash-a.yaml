@@ -1,0 +1,15 @@
+# flash-a: REST on the default port 7443; partner is flash-b.
+# Node addresses are what the generated ip_quorum.jar connects to, so they use
+# the container's own hostname.
+control_listen: ":9000"
+external_systems: [flash-b]
+
+clusters:
+  - name: flash-a
+    username: superuser
+    password: passw0rd-a
+    rest_listen: ":7443"
+    partner_system: flash-b
+    nodes:
+      - address: "flash-a:1260"
+      - address: "flash-a:1261"

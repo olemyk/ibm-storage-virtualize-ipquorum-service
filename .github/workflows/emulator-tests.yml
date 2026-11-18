@@ -1,0 +1,53 @@
+name: Emulator Integration Tests
+
+# Runs the real ipquorum-runner image (real downloader + entrypoint + java -jar)
+# against emulated FlashSystems. No IBM hardware or ip_quorum.jar needed.
+# The emulator's Go unit tests run in security-and-tests.yml (module matrix).
+
+on:
+  push:
+    branches: [main, 'Major-update-to-the-ipquorum-*']
+    paths:
+      - 'ipquorum-emulator/**'
+      - 'ipquorum-download-go/**'
+      - 'ipquorum-management-platform/ipquorum-runner/**'
+      - '.github/workflows/emulator-tests.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'ipquorum-emulator/**'
+      - 'ipquorum-download-go/**'
+      - 'ipquorum-management-platform/ipquorum-runner/**'
+      - '.github/workflows/emulator-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    name: Container integration tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      # Deliberately no setup-buildx-action: its docker-container builder cannot
+      # see images built by an earlier `docker build`, and the runner test
+      # overlay is built FROM the locally built runner base image.
+      #
+      # The runner base image downloads a released downloader; the test overlay
+      # then replaces it with the one built from this commit.
+      - name: Run integration tests
+        env:
+          RUNTIME: docker
+        run: ./ipquorum-emulator/tests/run-integration.sh
+
+      - name: Container logs (on failure)
+        if: failure()
+        run: |
+          for c in $(docker ps -a --filter name=ipqemu --format '{{.Names}}'); do
+            echo "::group::$c"
+            docker logs "$c" 2>&1 | tail -100
+            echo "::endgroup::"
+          done

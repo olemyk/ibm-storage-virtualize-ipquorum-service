@@ -7,6 +7,9 @@ import (
 	"github.com/olemyk/ipquorum-go/internal/errors"
 )
 
+// DefaultAPIPort is the default Storage Virtualize REST API port
+const DefaultAPIPort = 7443
+
 // Config holds all configuration for IPQuorum operations
 type Config struct {
 	// API connection settings
@@ -38,7 +41,7 @@ type Config struct {
 // NewConfig creates a new Config with default values
 func NewConfig() *Config {
 	return &Config{
-		APIPort:     7443,
+		APIPort:     DefaultAPIPort,
 		VerifySSL:   false,
 		MkQuorumApp: true,
 		Download:    true,
@@ -64,6 +67,10 @@ func (c *Config) Validate() error {
 
 	if c.Username == "" {
 		return errors.NewValidationError("--user <username> is required")
+	}
+
+	if c.APIPort < 1 || c.APIPort > 65535 {
+		return errors.NewValidationError("--api-port must be between 1 and 65535")
 	}
 
 	if c.MkQuorumApp && c.PartnerSystem == "" {

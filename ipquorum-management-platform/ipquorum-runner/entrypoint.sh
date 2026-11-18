@@ -6,6 +6,7 @@ set -euo pipefail
 
 # Configuration from environment variables
 API_ENDPOINT="${API_ENDPOINT:-}"
+API_PORT="${API_PORT:-}"
 VIRTUALIZE_USERNAME="${VIRTUALIZE_USERNAME:-}"
 VIRTUALIZE_PASSWORD="${VIRTUALIZE_PASSWORD:-}"
 PARTNERSYSTEM="${PARTNERSYSTEM:-}"
@@ -43,6 +44,7 @@ log_info "IPQuorum Container Starting"
 log_info "=========================================="
 log_info "Configuration:"
 log_info "  API_ENDPOINT: ${API_ENDPOINT}"
+log_info "  API_PORT: ${API_PORT:-default (7443)}"
 log_info "  USERNAME: ${VIRTUALIZE_USERNAME}"
 log_info "  PARTNERSYSTEM: ${PARTNERSYSTEM}"
 log_info "  DOWNLOAD_JAR: ${DOWNLOAD_JAR}"
@@ -66,6 +68,10 @@ download_jar() {
     )
     
     # Add optional flags
+    if [[ -n "${API_PORT}" ]]; then
+        args+=(--api-port "${API_PORT}")
+    fi
+
     if [[ "${INSECURE}" == "true" ]]; then
         args+=(--insecure)
     else

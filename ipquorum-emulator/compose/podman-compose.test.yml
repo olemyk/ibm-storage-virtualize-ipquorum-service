@@ -1,0 +1,86 @@
+# Emulated FlashSystems plus one IP quorum runner per system, no hardware needed.
+#
+# Normally started through tests/run-integration.sh, which builds the images
+# first. To bring it up by hand:
+#   podman-compose -f compose/podman-compose.test.yml -p ipqemu up -d
+#
+# Control APIs are published on 127.0.0.1 only (no authentication, test only):
+#   flash-a 19001, flash-b 19002, flash-c 19003
+name: ipqemu
+
+x-mock: &mock
+  image: localhost/ipquorum-emulator:latest
+  restart: "no"
+  networks: [emulator]
+
+x-runner: &runner
+  image: localhost/ipquorum-runner:emulator-test
+  platform: linux/amd64
+  restart: "no"
+  networks: [emulator]
+  environment: &runner-env
+    VIRTUALIZE_USERNAME: superuser
+    INSECURE: "true"
+    DOWNLOAD_JAR: "true"
+    CREATE_QUORUM_APP: "true"
+    # Fast keepalive/reconnect so tests do not need long waits
+    JAVA_OPTS: "-Xmx128m -Xms64m -Dfake.keepalive.ms=500 -Dfake.retry.ms=1000"
+
+services:
+  flash-a:
+    <<: *mock
+    container_name: ipqemu-flash-a
+    hostname: flash-a
+    volumes: ["./flash-a.yaml:/etc/emulator/config.yaml:ro"]
+    ports: ["127.0.0.1:19001:9000"]
+
+  flash-b:
+    <<: *mock
+    container_name: ipqemu-flash-b
+    hostname: flash-b
+    volumes: ["./flash-b.yaml:/etc/emulator/config.yaml:ro"]
+    ports: ["127.0.0.1:19002:9000"]
+
+  flash-c:
+    <<: *mock
+    container_name: ipqemu-flash-c
+    hostname: flash-c
+    volumes: ["./flash-c.yaml:/etc/emulator/config.yaml:ro"]
+    ports: ["127.0.0.1:19003:9000"]
+
+  # Uses the default REST port (API_PORT unset => 7443)
+  runner-a:
+    <<: *runner
+    container_name: ipqemu-runner-a
+    depends_on: [flash-a]
+    environment:
+      <<: *runner-env
+      API_ENDPOINT: flash-a
+      VIRTUALIZE_PASSWORD: passw0rd-a
+      PARTNERSYSTEM: flash-b
+
+  runner-b:
+    <<: *runner
+    container_name: ipqemu-runner-b
+    depends_on: [flash-b]
+    environment:
+      <<: *runner-env
+      API_ENDPOINT: flash-b
+      VIRTUALIZE_PASSWORD: passw0rd-b
+      PARTNERSYSTEM: flash-a
+
+  # Uses a custom REST port through API_PORT
+  runner-c:
+    <<: *runner
+    container_name: ipqemu-runner-c
+    depends_on: [flash-c]
+    environment:
+      <<: *runner-env
+      API_ENDPOINT: flash-c
+      API_PORT: "8443"
+      VIRTUALIZE_PASSWORD: passw0rd-c
+      PARTNERSYSTEM: flash-a
+
+networks:
+  emulator:
+    name: ipqemu-net

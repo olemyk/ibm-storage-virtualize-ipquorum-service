@@ -227,6 +227,9 @@ Apr 22 11:56:59 rhel94 ipquorum-svc_cluster01[35667]: 2026-04-22 11:56:59 - INFO
 - **Go binary** (recommended - no dependencies, fast)
 - **Python 3.8+** or **Bash** (alternative download tools)
 
+### Developing without an IBM FlashSystem
+No FlashSystem or real `ip_quorum.jar` is needed for development or automated tests. See [`ipquorum-emulator/README.md`](ipquorum-emulator/README.md) for a multi-cluster mock FlashSystem (REST API, fake JAR, mock quorum nodes).
+
 ---
 
 ## 🌟 Multi-Instance Architecture

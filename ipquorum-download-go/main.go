@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/olemyk/ipquorum-go/internal/errors"
 	"github.com/olemyk/ipquorum-go/pkg/client"
@@ -15,6 +16,7 @@ import (
 var (
 	// Config flags
 	apiEndpoint    string
+	apiPort        int
 	username       string
 	passwordStr    string
 	passwordFile   string
@@ -56,6 +58,7 @@ Features:
 func init() {
 	// General flags
 	rootCmd.Flags().StringVar(&apiEndpoint, "api-endpoint", os.Getenv("API_ENDPOINT"), "API endpoint IP/hostname (REQUIRED)")
+	rootCmd.Flags().IntVar(&apiPort, "api-port", getEnvIntOrDefault("API_PORT", config.DefaultAPIPort), "REST API port (env: API_PORT)")
 	rootCmd.Flags().StringVar(&username, "user", os.Getenv("VIRTUALIZE_USERNAME"), "Auth username")
 	rootCmd.Flags().StringVar(&outputFile, "output", getEnvOrDefault("IPQ_OUTPUT_FILE", "ip_quorum.jar"), "Output jar filename")
 	rootCmd.Flags().BoolVar(&debug, "debug", false, "Enable debug logging")
@@ -99,6 +102,17 @@ func getEnvOrDefault(key, defaultValue string) string {
 	return defaultValue
 }
 
+// getEnvIntOrDefault returns the integer value of an env var, or the default
+// if it is unset or not a valid integer.
+func getEnvIntOrDefault(key string, defaultValue int) int {
+	if value := os.Getenv(key); value != "" {
+		if n, err := strconv.Atoi(value); err == nil {
+			return n
+		}
+	}
+	return defaultValue
+}
+
 func run(cmd *cobra.Command, args []string) error {
 	// Initialize logger
 	log := logger.New(debug)
@@ -134,6 +148,7 @@ func run(cmd *cobra.Command, args []string) error {
 	// Create configuration
 	cfg := config.NewConfig()
 	cfg.APIEndpoint = apiEndpoint
+	cfg.APIPort = apiPort
 	cfg.Username = username
 	cfg.OutputFile = outputFile
 	cfg.Debug = debug

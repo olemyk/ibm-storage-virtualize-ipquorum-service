@@ -21,6 +21,7 @@ jobs:
       matrix:
         module:
           - ipquorum-download-go
+          - ipquorum-emulator
           - ipquorum-management-platform/server
           - ipquorum-management-platform/container-runtime-agent
           - ipquorum-management-platform/agent

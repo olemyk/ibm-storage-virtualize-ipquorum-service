@@ -1,0 +1,23 @@
+# Two clusters in one process, each the other's partner system (HyperSwap / PBHA).
+# Each cluster has its own credentials, REST port and node set, so a JAR
+# downloaded from flash-a only connects to flash-a's nodes.
+control_listen: "127.0.0.1:9000"
+
+clusters:
+  - name: flash-a
+    username: superuser
+    password: passw0rd-a
+    rest_listen: "127.0.0.1:8443"
+    partner_system: flash-b
+    nodes:
+      - address: "127.0.0.1:12601"
+      - address: "127.0.0.1:12602"
+
+  - name: flash-b
+    username: superuser
+    password: passw0rd-b
+    rest_listen: "127.0.0.1:8444"
+    partner_system: flash-a
+    nodes:
+      - address: "127.0.0.1:12611"
+      - address: "127.0.0.1:12612"

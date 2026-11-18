@@ -1,0 +1,26 @@
+# Test overlay for the production ipquorum-runner image.
+#
+# The production Dockerfile downloads a released ipquorum-download-go binary.
+# For tests we need the downloader and entrypoint from this working tree
+# (e.g. --api-port), so we build the real runner image first and replace only
+# those two files. Build context: repository root.
+#
+#   podman build --platform linux/amd64 -f ipquorum-emulator/compose/Containerfile.runner-test \
+#       --build-arg BASE=localhost/ipquorum-runner:emulator-base \
+#       -t localhost/ipquorum-runner:emulator-test .
+ARG BASE=localhost/ipquorum-runner:emulator-base
+
+FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.26-alpine AS downloader
+ARG TARGETARCH=amd64
+WORKDIR /src
+COPY ipquorum-download-go/go.mod ipquorum-download-go/go.sum ./
+RUN go mod download
+COPY ipquorum-download-go/ ./
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -trimpath -ldflags="-s -w" -o /out/ipquorum-download-go .
+
+# Pinned: the runner image is linux/amd64 (it downloads an amd64 binary). Without
+# this, podman on an arm64 host cannot resolve the local base image when the
+# downloader stage above runs natively on the host architecture.
+FROM --platform=linux/amd64 ${BASE}
+COPY --from=downloader --chown=ipquorum:ipquorum --chmod=755 /out/ipquorum-download-go /opt/ipquorum/bin/ipquorum-download-go
+COPY --chown=ipquorum:ipquorum --chmod=755 ipquorum-management-platform/ipquorum-runner/entrypoint.sh /opt/ipquorum/bin/entrypoint.sh

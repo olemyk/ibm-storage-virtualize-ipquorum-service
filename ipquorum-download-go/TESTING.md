@@ -161,15 +161,25 @@ Tests are automatically run in CI/CD pipelines. Ensure all tests pass before sub
 7. **Maintain high coverage** - aim for >80% code coverage
 8. **Run tests before committing** - ensure nothing is broken
 
+## Testing without an IBM FlashSystem
+
+You do not need a FlashSystem or a real `ip_quorum.jar` to test. The
+[`ipquorum-emulator`](../ipquorum-emulator/README.md) emulates one or several systems (REST API,
+quorum nodes and a fake JAR). The `pkg/client` tests use `httptest` TLS servers, and
+`make integration` in `ipquorum-emulator/` runs the real runner image end to end.
+
+The REST port is configurable with `--api-port` / `API_PORT` (default 7443) so the downloader can
+talk to an emulator on any port.
+
 ## Future Test Additions
 
+Covered: `pkg/client` (HTTP client, with mock servers), `pkg/config` (validation), end-to-end
+testing against the emulator.
+
 Consider adding tests for:
-- [ ] `pkg/client` - HTTP client functionality
-- [ ] `pkg/config` - Configuration validation
 - [ ] `pkg/logger` - Logging functionality
 - [ ] `pkg/password` - Password handling
 - [ ] `main.go` - CLI flag parsing and command execution
-- [ ] Integration tests - End-to-end testing with mock API
 
 ## Troubleshooting
 

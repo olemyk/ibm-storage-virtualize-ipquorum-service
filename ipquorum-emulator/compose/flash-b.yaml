@@ -1,0 +1,13 @@
+# flash-b: REST on the default port 7443; partner is flash-a.
+control_listen: ":9000"
+external_systems: [flash-a]
+
+clusters:
+  - name: flash-b
+    username: superuser
+    password: passw0rd-b
+    rest_listen: ":7443"
+    partner_system: flash-a
+    nodes:
+      - address: "flash-b:1260"
+      - address: "flash-b:1261"

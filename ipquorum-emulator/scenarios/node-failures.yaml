@@ -1,0 +1,24 @@
+# One healthy cluster and one with a failing node, to test that the failure
+# of one system does not affect the other.
+control_listen: "127.0.0.1:9000"
+
+clusters:
+  - name: flash-a
+    password: passw0rd
+    rest_listen: "127.0.0.1:8443"
+    nodes:
+      - address: "127.0.0.1:12601"
+      - address: "127.0.0.1:12602"
+
+  - name: flash-b
+    password: passw0rd
+    rest_listen: "127.0.0.1:8444"
+    nodes:
+      - address: "127.0.0.1:12611"
+      - address: "127.0.0.1:12612"
+        behavior: down              # connection refused
+      - address: "127.0.0.1:12613"
+        behavior: handshake-timeout # accepts, never answers
+      - address: "127.0.0.1:12614"
+        behavior: drop-after        # answers, then closes the connection
+        drop_after: 5s

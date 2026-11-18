@@ -1,0 +1,21 @@
+# Single healthy cluster, run locally on the host (no containers).
+#
+#   go run ./cmd/mock-flashsystem -config scenarios/single-healthy.yaml
+#   ipquorum-download-go --api-endpoint 127.0.0.1 --api-port 8443 \
+#       --user superuser --pass passw0rd --partnersystem cluster02 --output /tmp/ip_quorum.jar
+control_listen: "127.0.0.1:9000"
+
+# cluster02 is not emulated here, but is accepted as a partner system.
+external_systems: [cluster02]
+
+clusters:
+  - name: flash-a
+    username: superuser
+    password: passw0rd
+    rest_listen: "127.0.0.1:8443"
+    partner_system: cluster02
+    nodes:
+      - address: "127.0.0.1:12601"
+      - address: "127.0.0.1:12602"
+      - address: "127.0.0.1:12603"
+      - address: "127.0.0.1:12604"

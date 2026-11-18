@@ -1,0 +1,48 @@
+# One cluster per REST scenario, to exercise downloader error handling.
+# Connect to a cluster by its rest_listen port.
+control_listen: "127.0.0.1:9000"
+
+clusters:
+  - name: auth-401
+    password: passw0rd
+    rest_listen: "127.0.0.1:8401"
+    scenario: auth-401
+    nodes: [{address: "127.0.0.1:12701"}]
+
+  - name: auth-403
+    password: passw0rd
+    rest_listen: "127.0.0.1:8403"
+    scenario: auth-403
+    nodes: [{address: "127.0.0.1:12702"}]
+
+  - name: rate-limit
+    password: passw0rd
+    rest_listen: "127.0.0.1:8429"
+    scenario: rate-limit-429
+    rate_limit_count: 2          # first 2 auth attempts return 429
+    nodes: [{address: "127.0.0.1:12703"}]
+
+  - name: mkquorumapp-error
+    password: passw0rd
+    rest_listen: "127.0.0.1:8500"
+    scenario: mkquorumapp-error
+    nodes: [{address: "127.0.0.1:12704"}]
+
+  - name: download-error
+    password: passw0rd
+    rest_listen: "127.0.0.1:8501"
+    scenario: download-error
+    nodes: [{address: "127.0.0.1:12705"}]
+
+  - name: download-empty
+    password: passw0rd
+    rest_listen: "127.0.0.1:8502"
+    scenario: download-empty
+    nodes: [{address: "127.0.0.1:12706"}]
+
+  - name: download-slow
+    password: passw0rd
+    rest_listen: "127.0.0.1:8503"
+    scenario: download-slow
+    download_delay: 3s
+    nodes: [{address: "127.0.0.1:12707"}]

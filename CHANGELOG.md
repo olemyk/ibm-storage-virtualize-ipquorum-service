@@ -2,6 +2,18 @@
 
 All notable changes to the IP Quorum systemd service will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- **IP quorum emulator** (`ipquorum-emulator/`) - develop and test without an IBM FlashSystem or a real `ip_quorum.jar`
+  - `mock-flashsystem` emulates the REST API (`auth`, `mkquorumapp`, `download`) for one or several clusters, with per-cluster credentials, tokens, state, partner system (strict) and node lists
+  - Fake `ip_quorum.jar` (built in CI, not committed) and mock quorum nodes on TCP with node-down, handshake-timeout and drop-after behaviors
+  - Failure scenarios per cluster: 401, 403, 429, `mkquorumapp` error, download error, empty and slow download
+  - Test-only control API to change scenarios and node behavior at runtime
+  - Container integration tests (`tests/run-integration.sh`) and an `emulator-tests.yml` CI workflow
+- **`--api-port` / `API_PORT`** for `ipquorum-download-go` and the runner image (default stays 7443)
+- Unit tests for `pkg/client` and `pkg/config` in `ipquorum-download-go`
+
 ## [2.0.7] - 2026-04-24 - Bug Fix Release
 
 ### 🐛 Bug Fixes

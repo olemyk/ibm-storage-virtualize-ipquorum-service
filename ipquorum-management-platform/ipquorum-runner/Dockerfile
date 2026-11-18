@@ -51,6 +51,7 @@ USER ipquorum
 
 # Environment variables with defaults
 ENV API_ENDPOINT="" \
+    API_PORT="" \
     VIRTUALIZE_USERNAME="" \
     VIRTUALIZE_PASSWORD="" \
     PARTNERSYSTEM="" \

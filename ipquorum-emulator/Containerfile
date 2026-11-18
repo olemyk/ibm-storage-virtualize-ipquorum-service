@@ -1,0 +1,32 @@
+# Mock FlashSystem emulator image: Go binary + fake ip_quorum.jar template.
+# Build context: ipquorum-emulator/
+#
+#   podman build -f Containerfile -t localhost/ipquorum-emulator:latest .
+
+# --- fake ip_quorum.jar (needs a JDK; the jar itself is architecture independent)
+FROM docker.io/library/eclipse-temurin:17-jdk-jammy AS jar
+WORKDIR /src
+COPY fake-ipquorum-jar/ ./fake-ipquorum-jar/
+RUN bash fake-ipquorum-jar/build.sh /out/fake-ip_quorum.jar
+
+# --- mock-flashsystem
+FROM docker.io/library/golang:1.25-alpine AS gobuild
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY cmd/ ./cmd/
+COPY internal/ ./internal/
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/mock-flashsystem ./cmd/mock-flashsystem
+
+# --- runtime
+FROM docker.io/library/alpine:3.20
+LABEL description="IBM FlashSystem emulator for IP quorum testing (TEST ONLY, not for production)"
+RUN adduser -D -u 1000 emulator
+COPY --from=gobuild /out/mock-flashsystem /usr/local/bin/mock-flashsystem
+COPY --from=jar /out/fake-ip_quorum.jar /usr/local/share/fake-ip_quorum.jar
+ENV EMULATOR_CONFIG=/etc/emulator/config.yaml \
+    FAKE_JAR_TEMPLATE=/usr/local/share/fake-ip_quorum.jar
+USER emulator
+# REST (default 7443), test-only control API, mock quorum nodes
+EXPOSE 7443 9000 1260
+ENTRYPOINT ["/usr/local/bin/mock-flashsystem"]

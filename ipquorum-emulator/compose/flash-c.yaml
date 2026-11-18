@@ -1,0 +1,13 @@
+# flash-c: REST on a NON-default port (8443). Used to test API_PORT end to end
+# and as the target for REST failure scenarios, so flash-a and flash-b stay
+# undisturbed.
+control_listen: ":9000"
+external_systems: [flash-a]
+
+clusters:
+  - name: flash-c
+    username: superuser
+    password: passw0rd-c
+    rest_listen: ":8443"
+    nodes:
+      - address: "flash-c:1260"
