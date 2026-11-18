@@ -9,7 +9,13 @@ import Dashboard from './pages/Dashboard';
 import Instances from './pages/Instances';
 import InstanceForm from './pages/InstanceForm';
 import InstanceDetail from './pages/InstanceDetail';
+import Containers from './pages/Containers';
+import ContainerDetail from './pages/ContainerDetail';
+import ContainerForm from './pages/ContainerForm';
+import IPQuorumContainers from './pages/IPQuorumContainers';
+import IPQuorumContainerFormPage from './pages/IPQuorumContainerFormPage';
 import Servers from './pages/Servers';
+import ServerDetail from './pages/ServerDetail';
 import Users from './pages/Users';
 import Settings from './pages/Settings';
 import Help from './pages/Help';
@@ -103,11 +109,77 @@ const App: React.FC = () => {
           />
 
           <Route
+            path="/containers"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Containers />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/containers/new"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <ContainerForm />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/containers/:id"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <ContainerDetail />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/ipquorum-containers"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <IPQuorumContainers />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/ipquorum-containers/new"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <IPQuorumContainerFormPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
             path="/servers"
             element={
               <ProtectedRoute>
                 <Layout>
                   <Servers />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/servers/:id"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <ServerDetail />
                 </Layout>
               </ProtectedRoute>
             }

@@ -10,6 +10,8 @@ import {
   Menu,
   X,
   HelpCircle,
+  Container,
+  Box,
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import Button from './ui/Button';
@@ -32,6 +34,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Instances', href: '/instances', icon: Server },
+    { name: 'Containers', href: '/containers', icon: Container },
+    { name: 'IPQuorum Containers', href: '/ipquorum-containers', icon: Box },
     { name: 'Servers', href: '/servers', icon: HardDrive },
     { name: 'Users', href: '/users', icon: Users, adminOnly: true },
     { name: 'Settings', href: '/settings', icon: Settings },

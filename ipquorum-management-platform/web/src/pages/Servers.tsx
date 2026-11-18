@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, HardDrive, Trash2, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import {
@@ -18,6 +19,7 @@ import type { Server, ServerFormData } from '../types/server';
 import type { Column } from '../components/ui/Table';
 
 const Servers: React.FC = () => {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -131,7 +133,12 @@ const Servers: React.FC = () => {
       render: (server) => (
         <div className="flex items-center gap-2">
           {getStatusIcon(server.status)}
-          <span className="font-medium">{server.hostname}</span>
+          <button
+            onClick={() => navigate(`/servers/${server.id}`)}
+            className="font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+          >
+            {server.hostname}
+          </button>
         </div>
       ),
     },

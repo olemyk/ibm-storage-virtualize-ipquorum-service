@@ -34,7 +34,10 @@ apiClient.interceptors.response.use(
       // Unauthorized - clear token and redirect to login
       localStorage.removeItem('auth_token');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      localStorage.removeItem('auth-storage'); // Clear Zustand persisted state
+      
+      // Force a full page reload to reset all state
+      window.location.replace('/login');
     }
     return Promise.reject(error);
   }
@@ -221,13 +224,40 @@ export const serversApi = {
     return response.data;
   },
   
+  update: async (id: string, data: {
+    hostname: string;
+    ip_address: string;
+    agent_port: number;
+    api_key?: string;
+    tls_enabled?: boolean;
+    tls_verify?: boolean;
+  }) => {
+    const response = await apiClient.put(`/servers/${id}`, data);
+    return response.data;
+  },
+  
   delete: async (id: string) => {
     const response = await apiClient.delete(`/servers/${id}`);
     return response.data;
   },
   
+  test: async (id: string) => {
+    const response = await apiClient.post(`/servers/${id}/test`);
+    return response.data;
+  },
+  
+  getStatus: async (id: string) => {
+    const response = await apiClient.get(`/servers/${id}/status`);
+    return response.data;
+  },
+  
   getInstances: async (id: string) => {
     const response = await apiClient.get(`/servers/${id}/instances`);
+    return response.data;
+  },
+  
+  getContainerLogs: async (serverId: string, containerId: string, tail: number = 100) => {
+    const response = await apiClient.get(`/servers/${serverId}/containers/${containerId}/logs?tail=${tail}`);
     return response.data;
   },
 };
@@ -260,8 +290,12 @@ export const api = {
     list: serversApi.getAll,
     get: serversApi.getById,
     register: serversApi.register,
+    update: serversApi.update,
     delete: serversApi.delete,
+    test: serversApi.test,
+    getStatus: serversApi.getStatus,
     getInstances: serversApi.getInstances,
+    getContainerLogs: serversApi.getContainerLogs,
   },
   users: {
     list: usersApi.getAll,

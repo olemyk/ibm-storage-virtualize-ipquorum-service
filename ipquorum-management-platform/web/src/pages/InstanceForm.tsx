@@ -163,6 +163,7 @@ const InstanceForm: React.FC = () => {
     const submitData: any = {
       name: formData.name,
       server_id: formData.server_id,
+      deployment_type: 'systemd', // Default to systemd deployment
       api_endpoint: formData.api_endpoint,
       username: formData.username,
       partnersystem: formData.partnersystem,
