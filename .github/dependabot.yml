@@ -1,0 +1,72 @@
+version: 2
+updates:
+  # Go modules
+  - package-ecosystem: gomod
+    directory: /ipquorum-download-go
+    schedule:
+      interval: weekly
+    groups:
+      go-minor-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: gomod
+    directory: /ipquorum-management-platform/server
+    schedule:
+      interval: weekly
+    groups:
+      go-minor-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: gomod
+    directory: /ipquorum-management-platform/container-runtime-agent
+    schedule:
+      interval: weekly
+    groups:
+      go-minor-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: gomod
+    directory: /ipquorum-management-platform/agent
+    schedule:
+      interval: weekly
+    groups:
+      go-minor-patch:
+        update-types: [minor, patch]
+
+  # Web UI
+  - package-ecosystem: npm
+    directory: /ipquorum-management-platform/web
+    schedule:
+      interval: weekly
+    groups:
+      npm-minor-patch:
+        update-types: [minor, patch]
+
+  # GitHub Actions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
+  # Container base images
+  - package-ecosystem: docker
+    directory: /ipquorum-download-go
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /ipquorum-management-platform
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /ipquorum-management-platform/server
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /ipquorum-management-platform/container-runtime-agent
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /ipquorum-management-platform/ipquorum-runner
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /ipquorum-management-platform/web
+    schedule:
+      interval: weekly
