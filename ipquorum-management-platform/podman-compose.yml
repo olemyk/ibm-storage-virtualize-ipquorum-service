@@ -1,0 +1,114 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: docker.io/library/postgres:14-alpine
+    container_name: ipquorum-postgres
+    environment:
+      POSTGRES_DB: ipquorum_platform
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      POSTGRES_INITDB_ARGS: "-E UTF8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./server/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ipquorum-network
+
+  # Container Runtime Agent (Podman)
+  agent:
+    build:
+      context: ./container-runtime-agent
+      dockerfile: Dockerfile
+    container_name: ipquorum-agent
+    ports:
+      - "8081:8080"
+      - "9090:9090"
+    volumes:
+      - /run/user/1000/podman/podman.sock:/run/podman/podman.sock:rw
+      - ./container-runtime-agent/config.yaml:/app/config.yaml:ro
+    environment:
+      IPQUORUM_AGENT_SERVER_PORT: "8080"
+      IPQUORUM_AGENT_RUNTIME_PREFERRED_RUNTIME: "podman"
+      IPQUORUM_AGENT_RUNTIME_PODMAN_SOCKET_PATH: "/run/podman/podman.sock"
+      IPQUORUM_AGENT_AUTH_ENABLED: "true"
+      IPQUORUM_AGENT_AUTH_JWT_SECRET: "test-secret-key-change-in-production"
+      IPQUORUM_AGENT_LOGGING_LEVEL: "debug"
+      IPQUORUM_AGENT_METRICS_ENABLED: "true"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ipquorum-network
+
+  # Manager Server
+  manager:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: ipquorum-manager
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: "5432"
+      DATABASE_NAME: ipquorum_platform
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres123
+      DATABASE_SSLMODE: disable
+      JWT_SECRET: test-secret-key-change-in-production
+      SERVER_PORT: "8080"
+      LOG_LEVEL: debug
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/v1/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    depends_on:
+      postgres:
+        condition: service_healthy
+      agent:
+        condition: service_healthy
+    networks:
+      - ipquorum-network
+
+  # Frontend (Development)
+  frontend:
+    build:
+      context: ./web
+      dockerfile: Dockerfile.dev
+    container_name: ipquorum-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:8080
+    volumes:
+      - ./web:/app:ro
+      - /app/node_modules
+    depends_on:
+      - manager
+    networks:
+      - ipquorum-network
+
+volumes:
+  postgres-data:
+    driver: local
+
+networks:
+  ipquorum-network:
+    driver: bridge
+
+# Made with Bob

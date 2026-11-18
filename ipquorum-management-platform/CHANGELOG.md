@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-11-18
+
+### Added
+- **Container-based IP Quorum deployments**
+  - New `container-runtime-agent` service (Docker and Podman runtimes, JWT auth, rate limiting, caching, metrics, OpenAPI docs, k6 load tests)
+  - New `ipquorum-runner` container image for running IP Quorum
+  - Server container and IPQuorum APIs (`/containers`, `/ipquorum`), container service, and `container_instances`, `container_configs` and `container_stats` tables
+  - Agent client container operations: create, list, start, stop, restart, remove, inspect, logs and stats
+  - Web UI pages for containers, IP Quorum containers and server detail, with a logs viewer
+  - Server edit (`PUT /servers/:id`), connection test and server status endpoints
+  - `podman-compose.yml` and `podman-compose.dev.yml` stacks with helper scripts
+  - `HEAD /health` support
+
+### Changed
+- Default agent API port is now 8081 (was 9090, the metrics port)
+- Server TLS cert/key defaults are empty, so HTTP is the default mode
+- Web nginx proxies to the backend over HTTP with runtime DNS resolution
+- Web dev tooling upgraded (Vite 6, ESLint 9, typescript-eslint 8)
+- Health checker now monitors servers and container instances
+
+### Fixed
+- Missing `package` clause in `container_service.go`
+- Executor tests updated for the `NewExecutor` agent registry argument
+- Container-runtime mock implements `ListImages`
+
 ## [3.0.8] - 2026-05-09
 
 ### Added

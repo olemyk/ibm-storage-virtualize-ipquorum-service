@@ -1,0 +1,217 @@
+version: '3.8'
+
+services:
+  # Backend API Server
+  ipquorum-server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: ipquorum-server
+    hostname: ipquorum-server
+    ports:
+      - "8443:8080"
+    environment:
+      # Database
+      - DB_PATH=/data/ipquorum.db
+      
+      # Security
+      - JWT_SECRET=${JWT_SECRET:-change-this-secret-in-production}
+      
+      # Logging
+      - LOG_LEVEL=${LOG_LEVEL:-debug}
+      - LOG_FORMAT=${LOG_FORMAT:-json}
+      
+      # Scripts
+      - SCRIPTS_DIR=/app/scripts
+      
+      # IPQuorum Agent Configuration
+      - IPQUORUM_AGENT_ENABLED=${IPQUORUM_AGENT_ENABLED:-true}
+      - IPQUORUM_AGENT_HOST=${IPQUORUM_AGENT_HOST:-ipquorum-agent}
+      - IPQUORUM_AGENT_PORT=${IPQUORUM_AGENT_PORT:-9090}
+      - IPQUORUM_AGENT_API_KEY=${IPQUORUM_AGENT_API_KEY:-}
+      - IPQUORUM_AGENT_TLS_ENABLED=${IPQUORUM_AGENT_TLS_ENABLED:-false}
+      - IPQUORUM_AGENT_TLS_VERIFY=${IPQUORUM_AGENT_TLS_VERIFY:-false}
+      
+      # Performance
+      - MAX_CONCURRENT_OPERATIONS=${MAX_CONCURRENT_OPERATIONS:-10}
+      - OPERATION_TIMEOUT=${OPERATION_TIMEOUT:-300s}
+    volumes:
+      - ./data:/data:z,U
+      - ./scripts:/app/scripts:ro,z
+      - ./logs:/var/log/ipquorum:z,U
+      - ./tls:/etc/ipquorum-platform/tls:ro,z,U
+    healthcheck:
+      test:
+        - "CMD"
+        - "wget"
+        - "--no-verbose"
+        - "--tries=1"
+        - "-O"
+        - "/dev/null"
+        - "http://localhost:8080/health"
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+    networks:
+      ipquorum-network:
+        aliases:
+          - ipquorum-server
+          - backend
+    labels:
+      - "com.ipquorum.service=api-server"
+      - "com.ipquorum.version=${MANAGER_VERSION:-3.1.0}"
+      - "com.ipquorum.component=manager"
+
+  # Frontend Web Dashboard with Nginx + HTTPS
+  ipquorum-web:
+    build:
+      context: ./web
+      dockerfile: Containerfile
+    container_name: ipquorum-web
+    hostname: ipquorum-web
+    ports:
+      - "${WEB_PORT:-3000}:80"
+      - "${WEB_HTTPS_PORT:-3443}:443"
+    environment:
+      - NGINX_WORKER_PROCESSES=${NGINX_WORKER_PROCESSES:-auto}
+      - NGINX_WORKER_CONNECTIONS=${NGINX_WORKER_CONNECTIONS:-1024}
+    volumes:
+      - ./certs:/etc/nginx/ssl:ro,Z
+    depends_on:
+      ipquorum-server:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "pidof nginx || exit 1"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      ipquorum-network:
+        aliases:
+          - ipquorum-web
+          - frontend
+    labels:
+      - "com.ipquorum.service=web-dashboard"
+      - "com.ipquorum.version=${WEB_VERSION:-3.1.0}"
+      - "com.ipquorum.component=web"
+
+  # Container Runtime Agent (Podman) - Optional
+  ipquorum-agent:
+    build:
+      context: ./container-runtime-agent
+      dockerfile: Dockerfile
+    container_name: ipquorum-agent
+    hostname: ipquorum-agent
+    privileged: true
+    security_opt:
+      - label=disable
+    ports:
+      - "8081:8081"
+      - "9090:9090"
+    volumes:
+      - /run/user/1000/podman/podman.sock:/run/podman/podman.sock:Z
+      - ./container-runtime-agent/config.yaml:/app/config.yaml:ro
+    environment:
+      IPQUORUM_AGENT_LOGGING_LEVEL: "debug"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "-O", "/dev/null", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+    networks:
+      ipquorum-network:
+        aliases:
+          - ipquorum-agent
+          - agent
+    labels:
+      - "com.ipquorum.service=container-agent"
+      - "com.ipquorum.component=agent"
+    profiles:
+      - agent
+
+  # Prometheus (Metrics Collection)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: ipquorum-prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9091}:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alerts:/etc/prometheus/alerts:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=${PROMETHEUS_RETENTION:-15d}'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    depends_on:
+      ipquorum-server:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ipquorum-network
+    labels:
+      - "com.ipquorum.service=prometheus"
+    profiles:
+      - monitoring
+
+  # Grafana (Metrics Visualization)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: ipquorum-grafana
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    environment:
+      # Admin credentials
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      
+      # Security
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      
+      # Server
+      - GF_SERVER_ROOT_URL=${GRAFANA_ROOT_URL:-http://localhost:3001}
+      - GF_SERVER_SERVE_FROM_SUB_PATH=false
+      
+      # Database
+      - GF_DATABASE_TYPE=sqlite3
+      - GF_DATABASE_PATH=/var/lib/grafana/grafana.db
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    networks:
+      - ipquorum-network
+    labels:
+      - "com.ipquorum.service=grafana"
+    profiles:
+      - monitoring
+
+networks:
+  ipquorum-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.89.0.0/16
+
+volumes:
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+# Made with Bob
