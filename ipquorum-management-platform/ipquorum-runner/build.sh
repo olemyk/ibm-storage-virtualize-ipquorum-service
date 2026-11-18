@@ -12,7 +12,7 @@ IMAGE_NAME="${IMAGE_NAME:-ipquorum-runner}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 REGISTRY="${REGISTRY:-localhost}"
 PLATFORM="${PLATFORM:-linux/amd64}"
-IPQUORUM_DOWNLOADER_VERSION="${IPQUORUM_DOWNLOADER_VERSION:-v3.0.8}"
+IPQUORUM_DOWNLOADER_VERSION="${IPQUORUM_DOWNLOADER_VERSION:-v3.1.1}"
 
 # Colors
 RED='\033[0;31m'
@@ -68,7 +68,7 @@ Options:
   --tag TAG                  Image tag (default: latest)
   --registry REG             Registry prefix (default: localhost)
   --platform PLAT            Target platform (default: linux/amd64)
-  --downloader-version VER   ipquorum-download-go version (default: v3.0.8)
+  --downloader-version VER   ipquorum-download-go version (default: v3.1.1)
   --help, -h                 Show this help message
 
 Examples:
@@ -84,7 +84,7 @@ Environment Variables:
   IMAGE_TAG                    Image tag (default: latest)
   REGISTRY                     Registry prefix (default: localhost)
   PLATFORM                     Target platform (default: linux/amd64)
-  IPQUORUM_DOWNLOADER_VERSION  ipquorum-download-go version (default: v3.0.8)
+  IPQUORUM_DOWNLOADER_VERSION  ipquorum-download-go version (default: v3.1.1)
 
 Binary Source:
   https://github.com/olemyk/ibm-storage-virtualize-ipquorum-service/releases

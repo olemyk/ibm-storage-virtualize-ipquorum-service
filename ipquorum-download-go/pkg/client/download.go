@@ -78,7 +78,7 @@ func (c *Client) DownloadJAR() error {
 	// Check status code
 	if statusCode != 200 && statusCode != 201 {
 		errorMsg := fmt.Sprintf("Download failed with status %d", statusCode)
-		c.logger.Error(errorMsg)
+		c.logger.Error("%s", errorMsg)
 		return errors.NewAPIError(errorMsg, statusCode, url)
 	}
 

@@ -89,7 +89,7 @@ func (c *Client) CreateQuorumApp() error {
 	}
 
 	errorMsg := fmt.Sprintf("mkquorumapp failed with status %d", statusCode)
-	c.logger.Error(errorMsg)
+	c.logger.Error("%s", errorMsg)
 	return errors.NewAPIError(errorMsg, statusCode, url)
 }
 

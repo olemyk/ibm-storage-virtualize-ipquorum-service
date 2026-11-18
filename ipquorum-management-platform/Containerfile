@@ -1,5 +1,5 @@
 # Multi-stage build for IP Quorum Management Platform
-FROM golang:1.23-alpine AS builder
+FROM golang:1.26-alpine AS builder
 
 # Install build dependencies including gcc for CGO (required by SQLite)
 RUN apk add --no-cache git make bash gcc musl-dev sqlite-dev

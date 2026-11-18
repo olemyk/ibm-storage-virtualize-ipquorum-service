@@ -69,6 +69,13 @@ func (f *Factory) DetectAvailableRuntimes(ctx context.Context) ([]RuntimeType, e
 
 // CreateRuntime creates a runtime instance based on configuration and availability
 func (f *Factory) CreateRuntime(ctx context.Context) (Runtime, error) {
+	// Validate configuration before probing the host
+	switch strings.ToLower(f.config.PreferredRuntime) {
+	case "docker", "podman", "auto", "":
+	default:
+		return nil, fmt.Errorf("invalid preferred runtime: %s (must be 'docker', 'podman', or 'auto')", f.config.PreferredRuntime)
+	}
+
 	available, err := f.DetectAvailableRuntimes(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to detect available runtimes: %w", err)

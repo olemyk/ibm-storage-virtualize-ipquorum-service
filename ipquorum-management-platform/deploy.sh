@@ -29,7 +29,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Default configuration
-VERSION="${VERSION:-3.1.0}"
+VERSION="${VERSION:-3.1.1}"
 CONTAINER_RUNTIME=""
 COMPOSE_CMD=""
 ENABLE_MONITORING=false
@@ -84,7 +84,7 @@ Examples:
   $0 --podman --monitoring
 
   # Deploy specific version
-  $0 --version v3.1.0
+  $0 --version v3.1.1
 
   # Update existing deployment
   $0 --update

@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.1] - 2026-11-18
+
+### Security
+- Upgraded all Go modules to Go 1.26.11, which fixes 30 standard-library advisories (net/http, crypto/tls, crypto/x509, net/url and others)
+- Upgraded `golang.org/x/net` (0.43 to 0.60+) and `github.com/golang-jwt/jwt/v5` (5.2.1, GO-2025-3553) plus all other Go dependencies
+- `npm audit fix` applied to the web UI. Remaining: `react-router` (moderate) needs a breaking major upgrade
+- Known and unfixed upstream: GO-2026-4883 and GO-2026-4887 in `github.com/docker/docker` (Docker daemon plugin issues)
+
+### Added
+- GitHub Actions: `security-and-tests.yml` (build, vet, race tests, `govulncheck`, `go mod tidy` check, web typecheck, build and `npm audit`), run on push, PR and weekly
+- GitHub Actions: `codeql.yml` (Go and JavaScript/TypeScript)
+- `.github/dependabot.yml` for Go modules, npm, GitHub Actions and Dockerfiles, weekly
+
+### Changed
+- Container builds use Go 1.26 base images; release workflows read the Go version from `go.mod`
+- `container-runtime-agent` validates `preferred_runtime` before probing for Docker or Podman
+
+### Fixed
+- `go vet` non-constant format string in `ipquorum-download-go` logging calls
+- Flaky JWT tests (`TestTokenExpiration` and the tampered-token case)
+
 ## [3.1.0] - 2026-11-18
 
 ### Added

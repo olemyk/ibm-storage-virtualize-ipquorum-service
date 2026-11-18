@@ -177,8 +177,14 @@ func TestValidateToken(t *testing.T) {
 		token, err := manager.GenerateToken("user-123", "admin", []string{"admin"})
 		require.NoError(t, err)
 
-		// Tamper with token by changing last character
-		tamperedToken := token[:len(token)-1] + "X"
+		// Tamper with a character in the middle of the signature. The final base64
+		// character only carries partial bits, so changing it is not always detected.
+		idx := len(token) - 10
+		replacement := byte('A')
+		if token[idx] == replacement {
+			replacement = 'B'
+		}
+		tamperedToken := token[:idx] + string(replacement) + token[idx+1:]
 
 		claims, err := manager.ValidateToken(tamperedToken)
 		assert.Error(t, err)
@@ -329,8 +335,8 @@ func TestGetTokenInfo(t *testing.T) {
 }
 
 func TestTokenExpiration(t *testing.T) {
-	// Use a longer duration to avoid timing issues
-	manager, err := NewJWTManager("test-secret-key-12345", 500*time.Millisecond, "ipquorum-agent")
+	// JWT timestamps have 1s precision, so use 1s expiry and sleep well past it
+	manager, err := NewJWTManager("test-secret-key-12345", 1*time.Second, "ipquorum-agent")
 	require.NoError(t, err)
 
 	token, err := manager.GenerateToken("user-123", "admin", []string{"admin"})
@@ -342,7 +348,7 @@ func TestTokenExpiration(t *testing.T) {
 	require.NotNil(t, claims)
 
 	// Wait for token to expire with buffer
-	time.Sleep(600 * time.Millisecond)
+	time.Sleep(2100 * time.Millisecond)
 
 	// Token should now be expired
 	claims, err = manager.ValidateToken(token)
