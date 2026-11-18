@@ -9,3 +9,7 @@ ipquorum-download-go/GITHUB-ACTIONS-GUIDE.md
 ipquorum-download-go/ipquorum-download-go
 SECURITY-AUDIT-REPORT.md
 ipquorum-systemd/multi-instance/ipquorum@.service.hardened
+
+# macOS / runtime files
+.DS_Store
+*.pid
