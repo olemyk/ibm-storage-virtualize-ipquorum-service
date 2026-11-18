@@ -1,0 +1,896 @@
+openapi: 3.0.3
+info:
+  title: IPQuorum Container Runtime Agent API
+  description: |
+    REST API for managing containers through Docker/Podman runtimes.
+    
+    ## Features
+    - JWT Authentication
+    - Container lifecycle management
+    - Image management
+    - Runtime monitoring
+    - Prometheus metrics
+    
+    ## Authentication
+    Most endpoints require JWT authentication. Include the token in the Authorization header:
+    ```
+    Authorization: Bearer <token>
+    ```
+    
+    Obtain a token via POST /auth/login
+  version: 1.0.0
+  contact:
+    name: IPQuorum Team
+    email: support@ipquorum.io
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Development server
+  - url: https://agent.ipquorum.io
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: JWT authentication endpoints
+  - name: Containers
+    description: Container lifecycle management
+  - name: Images
+    description: Image management
+  - name: Runtime
+    description: Runtime information and health
+  - name: Metrics
+    description: Prometheus metrics
+
+paths:
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate user and receive JWT token
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              admin:
+                summary: Admin login
+                value:
+                  username: admin
+                  password: admin123
+              user:
+                summary: Regular user
+                value:
+                  username: user
+                  password: user123
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+              examples:
+                success:
+                  value:
+                    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                    expires_at: "2024-01-01T12:00:00Z"
+                    user:
+                      id: "123"
+                      username: admin
+                      roles: [admin]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh token
+      description: Get a new JWT token using existing token
+      operationId: refreshToken
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: User logout
+      description: Invalidate current JWT token
+      operationId: logout
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user
+      description: Get information about the authenticated user
+      operationId: getCurrentUser
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /containers:
+    get:
+      tags:
+        - Containers
+      summary: List containers
+      description: List all containers with optional filters
+      operationId: listContainers
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: all
+          in: query
+          description: Show all containers (default shows just running)
+          schema:
+            type: boolean
+            default: false
+        - name: filter
+          in: query
+          description: Filter containers by name, status, etc.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of containers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Container'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    post:
+      tags:
+        - Containers
+      summary: Create container
+      description: Create a new container with specified configuration
+      operationId: createContainer
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContainerConfig'
+            examples:
+              simple:
+                summary: Simple container
+                value:
+                  name: my-container
+                  image: alpine:latest
+                  cmd: ["sleep", "infinity"]
+              with_env:
+                summary: Container with environment
+                value:
+                  name: app-container
+                  image: nginx:latest
+                  env:
+                    - "ENV=production"
+                    - "PORT=8080"
+                  ports:
+                    - host_port: 8080
+                      container_port: 80
+                      protocol: tcp
+      responses:
+        '201':
+          description: Container created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Container'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /containers/{id}:
+    get:
+      tags:
+        - Containers
+      summary: Inspect container
+      description: Get detailed information about a container
+      operationId: inspectContainer
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ContainerID'
+      responses:
+        '200':
+          description: Container details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Container'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    delete:
+      tags:
+        - Containers
+      summary: Remove container
+      description: Remove a container
+      operationId: removeContainer
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ContainerID'
+        - name: force
+          in: query
+          description: Force remove running container
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '204':
+          description: Container removed
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /containers/{id}/start:
+    post:
+      tags:
+        - Containers
+      summary: Start container
+      description: Start a stopped container
+      operationId: startContainer
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ContainerID'
+      responses:
+        '204':
+          description: Container started
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /containers/{id}/stop:
+    post:
+      tags:
+        - Containers
+      summary: Stop container
+      description: Stop a running container
+      operationId: stopContainer
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ContainerID'
+        - name: timeout
+          in: query
+          description: Timeout in seconds before killing
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '204':
+          description: Container stopped
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /containers/{id}/restart:
+    post:
+      tags:
+        - Containers
+      summary: Restart container
+      description: Restart a container
+      operationId: restartContainer
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ContainerID'
+        - name: timeout
+          in: query
+          description: Timeout in seconds before killing
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '204':
+          description: Container restarted
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /containers/{id}/logs:
+    get:
+      tags:
+        - Containers
+      summary: Get container logs
+      description: Retrieve logs from a container
+      operationId: getContainerLogs
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ContainerID'
+        - name: follow
+          in: query
+          description: Follow log output
+          schema:
+            type: boolean
+            default: false
+        - name: tail
+          in: query
+          description: Number of lines to show from end
+          schema:
+            type: integer
+            default: 100
+        - name: timestamps
+          in: query
+          description: Show timestamps
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Container logs
+          content:
+            text/plain:
+              schema:
+                type: string
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /containers/{id}/stats:
+    get:
+      tags:
+        - Containers
+      summary: Get container stats
+      description: Get resource usage statistics for a container
+      operationId: getContainerStats
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ContainerID'
+      responses:
+        '200':
+          description: Container statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stats'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /images:
+    get:
+      tags:
+        - Images
+      summary: List images
+      description: List all images
+      operationId: listImages
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of images
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Image'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /images/pull:
+    post:
+      tags:
+        - Images
+      summary: Pull image
+      description: Pull an image from registry
+      operationId: pullImage
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - image
+              properties:
+                image:
+                  type: string
+                  example: "nginx:latest"
+      responses:
+        '200':
+          description: Image pulled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /runtime/info:
+    get:
+      tags:
+        - Runtime
+      summary: Get runtime info
+      description: Get information about the container runtime
+      operationId: getRuntimeInfo
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Runtime information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeInfo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /runtime/version:
+    get:
+      tags:
+        - Runtime
+      summary: Get runtime version
+      description: Get version information about the container runtime
+      operationId: getRuntimeVersion
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Runtime version
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Version'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /health:
+    get:
+      tags:
+        - Runtime
+      summary: Health check
+      description: Check if the agent is healthy
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Agent is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /metrics:
+    get:
+      tags:
+        - Metrics
+      summary: Prometheus metrics
+      description: Get Prometheus metrics
+      operationId: getMetrics
+      responses:
+        '200':
+          description: Prometheus metrics
+          content:
+            text/plain:
+              schema:
+                type: string
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    ContainerID:
+      name: id
+      in: path
+      required: true
+      description: Container ID or name
+      schema:
+        type: string
+
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          example: admin
+        password:
+          type: string
+          format: password
+          example: admin123
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        expires_at:
+          type: string
+          format: date-time
+        user:
+          $ref: '#/components/schemas/User'
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+
+    Container:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        image:
+          type: string
+        status:
+          type: string
+        state:
+          type: string
+        created:
+          type: string
+          format: date-time
+        started:
+          type: string
+          format: date-time
+        finished:
+          type: string
+          format: date-time
+        exit_code:
+          type: integer
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+        ports:
+          type: array
+          items:
+            $ref: '#/components/schemas/PortMapping'
+        runtime:
+          type: string
+          enum: [docker, podman]
+
+    ContainerConfig:
+      type: object
+      required:
+        - name
+        - image
+      properties:
+        name:
+          type: string
+        image:
+          type: string
+        cmd:
+          type: array
+          items:
+            type: string
+        entrypoint:
+          type: array
+          items:
+            type: string
+        env:
+          type: array
+          items:
+            type: string
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+        volumes:
+          type: array
+          items:
+            $ref: '#/components/schemas/VolumeMount'
+        ports:
+          type: array
+          items:
+            $ref: '#/components/schemas/PortMapping'
+        network_mode:
+          type: string
+        restart_policy:
+          type: string
+          enum: [no, always, on-failure, unless-stopped]
+        resources:
+          $ref: '#/components/schemas/Resources'
+        working_dir:
+          type: string
+        user:
+          type: string
+        hostname:
+          type: string
+
+    PortMapping:
+      type: object
+      properties:
+        host_ip:
+          type: string
+        host_port:
+          type: integer
+        container_port:
+          type: integer
+        protocol:
+          type: string
+          enum: [tcp, udp]
+
+    VolumeMount:
+      type: object
+      properties:
+        source:
+          type: string
+        destination:
+          type: string
+        read_only:
+          type: boolean
+        type:
+          type: string
+          enum: [bind, volume, tmpfs]
+
+    Resources:
+      type: object
+      properties:
+        cpu_limit:
+          type: string
+          example: "1.0"
+        memory_limit:
+          type: string
+          example: "512m"
+        cpu_shares:
+          type: integer
+        memory_swap:
+          type: string
+
+    Stats:
+      type: object
+      properties:
+        cpu_percent:
+          type: number
+          format: float
+        memory_usage:
+          type: integer
+          format: int64
+        memory_limit:
+          type: integer
+          format: int64
+        memory_percent:
+          type: number
+          format: float
+        network_rx:
+          type: integer
+          format: int64
+        network_tx:
+          type: integer
+          format: int64
+        block_read:
+          type: integer
+          format: int64
+        block_write:
+          type: integer
+          format: int64
+        pids:
+          type: integer
+          format: int64
+
+    Image:
+      type: object
+      properties:
+        id:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        size:
+          type: integer
+          format: int64
+        created:
+          type: string
+          format: date-time
+
+    RuntimeInfo:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        version:
+          type: string
+        api_version:
+          type: string
+        os:
+          type: string
+        arch:
+          type: string
+        kernel_version:
+          type: string
+        containers_running:
+          type: integer
+        containers_paused:
+          type: integer
+        containers_stopped:
+          type: integer
+        images:
+          type: integer
+        driver:
+          type: string
+        memory_total:
+          type: integer
+          format: int64
+        cpus:
+          type: integer
+          format: int64
+
+    Version:
+      type: object
+      properties:
+        version:
+          type: string
+        api_version:
+          type: string
+        min_api_version:
+          type: string
+        go_version:
+          type: string
+        git_commit:
+          type: string
+        build_time:
+          type: string
+        os:
+          type: string
+        arch:
+          type: string
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+        timestamp:
+          type: string
+          format: date-time
+        runtime:
+          type: string
+        uptime:
+          type: integer
+          format: int64
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+        details:
+          type: object
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Invalid request parameters"
+            code: "BAD_REQUEST"
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Authentication required"
+            code: "UNAUTHORIZED"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Container not found"
+            code: "NOT_FOUND"
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Internal server error"
+            code: "INTERNAL_ERROR"
+
+# Made with Bob

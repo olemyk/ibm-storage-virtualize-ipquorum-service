@@ -1,0 +1,111 @@
+# Container Runtime Agent Configuration Example
+# Copy this file to config.yaml and customize for your environment
+
+server:
+  host: "0.0.0.0"
+  port: 8080
+  read_timeout: 15s
+  write_timeout: 15s
+  idle_timeout: 60s
+  tls:
+    enabled: false
+    cert_file: "/path/to/cert.pem"
+    key_file: "/path/to/key.pem"
+
+runtime:
+  # Preferred runtime: "auto", "docker", or "podman"
+  preferred_runtime: "auto"
+  
+  # Socket paths for container runtimes
+  docker_socket_path: "/var/run/docker.sock"
+  podman_socket_path: "/var/run/podman.sock"
+  
+  # Timeout for runtime detection
+  detection_timeout: 5s
+  
+  # Default namespace for containers
+  default_namespace: "ipquorum"
+  
+  # Maximum number of containers to manage
+  max_containers: 100
+  
+  # Default values for container creation
+  container_defaults:
+    restart_policy: "unless-stopped"
+    network_mode: "bridge"
+    log_driver: "json-file"
+    labels:
+      managed-by: "ipquorum-agent"
+      environment: "production"
+    resources:
+      memory_limit: 536870912  # 512MB in bytes
+      cpu_shares: 1024
+      cpu_quota: 0
+      cpu_period: 100000
+      cpus: 1.0
+
+auth:
+  # Enable authentication
+  enabled: true
+  
+  # JWT configuration
+  jwt_secret: "change-me-in-production"
+  jwt_expiration: 24h
+  
+  # API keys for service-to-service authentication
+  api_keys:
+    - "api-key-1"
+    - "api-key-2"
+  
+  # Basic authentication
+  basic_auth:
+    enabled: false
+    users:
+      admin: "hashed-password"
+
+logging:
+  # Log level: "debug", "info", "warn", "error"
+  level: "info"
+  
+  # Log format: "json" or "text"
+  format: "json"
+  
+  # Log output: "stdout", "stderr", or "file"
+  output: "stdout"
+  
+  # File logging configuration (when output is "file")
+  file: "/var/log/ipquorum-agent/agent.log"
+  max_size: 100      # MB
+  max_backups: 3
+  max_age: 28        # days
+  compress: true
+
+metrics:
+  # Enable Prometheus metrics
+  enabled: true
+  
+  # Metrics endpoint path
+  path: "/metrics"
+  
+  # Metrics server port
+  port: 9090
+
+security:
+  # CORS allowed origins
+  allowed_origins:
+    - "*"
+  
+  # Rate limiting
+  rate_limiting:
+    enabled: true
+    requests_per_minute: 60
+    burst_size: 10
+    cleanup_interval: 5m
+  
+  # IP whitelist (empty = allow all)
+  ip_whitelist: []
+  
+  # IP blacklist
+  ip_blacklist: []
+
+# Made with Bob
