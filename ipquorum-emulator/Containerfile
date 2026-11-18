@@ -10,7 +10,7 @@ COPY fake-ipquorum-jar/ ./fake-ipquorum-jar/
 RUN bash fake-ipquorum-jar/build.sh /out/fake-ip_quorum.jar
 
 # --- mock-flashsystem
-FROM docker.io/library/golang:1.25-alpine AS gobuild
+FROM docker.io/library/golang:1.26-alpine AS gobuild
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
