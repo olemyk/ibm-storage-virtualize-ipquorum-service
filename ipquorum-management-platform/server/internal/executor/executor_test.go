@@ -16,7 +16,7 @@ func TestNewExecutor(t *testing.T) {
 	scriptsDir := "/tmp/test-scripts"
 	timeout := 5 * time.Minute
 
-	exec := NewExecutor(logger, scriptsDir, timeout)
+	exec := NewExecutor(logger, scriptsDir, timeout, nil)
 
 	if exec == nil {
 		t.Fatal("NewExecutor returned nil")
@@ -46,7 +46,7 @@ exit 0
 	}
 
 	logger := zap.NewNop()
-	exec := NewExecutor(logger, tmpDir, 5*time.Second)
+	exec := NewExecutor(logger, tmpDir, 5*time.Second, nil)
 
 	ctx := context.Background()
 	result := exec.Execute(ctx, "test-script.sh")
@@ -83,7 +83,7 @@ exit 0
 	}
 
 	logger := zap.NewNop()
-	exec := NewExecutor(logger, tmpDir, 5*time.Second)
+	exec := NewExecutor(logger, tmpDir, 5*time.Second, nil)
 
 	ctx := context.Background()
 	result := exec.Execute(ctx, "test-args.sh", "arg1", "arg2")
@@ -104,7 +104,7 @@ exit 0
 func TestExecute_ScriptNotFound(t *testing.T) {
 	tmpDir := t.TempDir()
 	logger := zap.NewNop()
-	exec := NewExecutor(logger, tmpDir, 5*time.Second)
+	exec := NewExecutor(logger, tmpDir, 5*time.Second, nil)
 
 	ctx := context.Background()
 	result := exec.Execute(ctx, "nonexistent.sh")
@@ -132,7 +132,7 @@ exit 0
 	}
 
 	logger := zap.NewNop()
-	exec := NewExecutor(logger, tmpDir, 5*time.Second)
+	exec := NewExecutor(logger, tmpDir, 5*time.Second, nil)
 
 	ctx := context.Background()
 	result := exec.Execute(ctx, "not-executable.sh")
@@ -159,7 +159,7 @@ exit 1
 	}
 
 	logger := zap.NewNop()
-	exec := NewExecutor(logger, tmpDir, 5*time.Second)
+	exec := NewExecutor(logger, tmpDir, 5*time.Second, nil)
 
 	ctx := context.Background()
 	result := exec.Execute(ctx, "error-script.sh")
@@ -192,7 +192,7 @@ exit 0
 	}
 
 	logger := zap.NewNop()
-	exec := NewExecutor(logger, tmpDir, 1*time.Second)
+	exec := NewExecutor(logger, tmpDir, 1*time.Second, nil)
 
 	ctx := context.Background()
 	result := exec.Execute(ctx, "slow-script.sh")
@@ -220,7 +220,7 @@ exit 0
 	}
 
 	logger := zap.NewNop()
-	exec := NewExecutor(logger, tmpDir, 10*time.Second)
+	exec := NewExecutor(logger, tmpDir, 10*time.Second, nil)
 
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -337,7 +337,7 @@ exit 0
 	}
 
 	logger := zap.NewNop()
-	exec := NewExecutor(logger, tmpDir, 5*time.Second)
+	exec := NewExecutor(logger, tmpDir, 5*time.Second, nil)
 
 	ctx := context.Background()
 	result := exec.StartInstance(ctx, "test-instance")
@@ -369,7 +369,7 @@ exit 0
 	}
 
 	logger := zap.NewNop()
-	exec := NewExecutor(logger, tmpDir, 5*time.Second)
+	exec := NewExecutor(logger, tmpDir, 5*time.Second, nil)
 
 	ctx := context.Background()
 	result := exec.StopInstance(ctx, "test-instance")
@@ -396,7 +396,7 @@ exit 0
 	}
 
 	logger := zap.NewNop()
-	exec := NewExecutor(logger, tmpDir, 5*time.Second)
+	exec := NewExecutor(logger, tmpDir, 5*time.Second, nil)
 
 	ctx := context.Background()
 	result := exec.RestartInstance(ctx, "test-instance")
@@ -427,7 +427,7 @@ exit 0
 	}
 
 	logger := zap.NewNop()
-	exec := NewExecutor(logger, tmpDir, 5*time.Second)
+	exec := NewExecutor(logger, tmpDir, 5*time.Second, nil)
 
 	ctx := context.Background()
 

@@ -436,7 +436,8 @@ func (e *Executor) StatusInstanceRemote(ctx context.Context, serverID, instanceN
 	return result
 }
 
-// GetLogsRemote gets logs from an instance on a remote agent
+// GetLogsRemote gets logs from a container on a remote agent
+// instanceName is used to derive the container name (ipquorum-{first 8 chars of instance ID})
 func (e *Executor) GetLogsRemote(ctx context.Context, serverID, instanceName string, lines int) *ExecuteResult {
 	result := &ExecuteResult{}
 	start := time.Now()
@@ -449,7 +450,13 @@ func (e *Executor) GetLogsRemote(ctx context.Context, serverID, instanceName str
 		return result
 	}
 
-	logs, err := client.GetLogs(ctx, instanceName, lines)
+	// For container-based instances, we need to use the container name
+	// Container name format: ipquorum-{first 8 chars of instance ID}
+	// However, instanceName here might be the instance name, not ID
+	// We'll try to use it as container name directly first
+	containerName := instanceName
+
+	logs, err := client.GetContainerLogs(ctx, containerName, lines)
 	result.Duration = time.Since(start)
 
 	if err != nil {

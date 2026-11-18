@@ -54,8 +54,8 @@ func Default() *Config {
 		Server: ServerConfig{
 			Port:                8080,
 			Host:                "0.0.0.0",
-			TLSCert:             "/etc/ipquorum-platform/tls/server.crt",
-			TLSKey:              "/etc/ipquorum-platform/tls/server.key",
+			TLSCert:             "", // Empty = HTTP mode (no TLS)
+			TLSKey:              "", // Empty = HTTP mode (no TLS)
 			LogLevel:            "info",
 			HealthCheckInterval: 30, // 30 seconds
 		},
@@ -70,8 +70,8 @@ func Default() *Config {
 		},
 		Agent: AgentConfig{
 			Port:            8444,
-			TLSCert:         "/etc/ipquorum-platform/tls/agent.crt",
-			TLSKey:          "/etc/ipquorum-platform/tls/agent.key",
+			TLSCert:         "", // Empty = HTTP mode (no TLS)
+			TLSKey:          "", // Empty = HTTP mode (no TLS)
 			ScriptsDir:      "/app/scripts",
 			HealthInterval:  30,
 			MetricsInterval: 60,

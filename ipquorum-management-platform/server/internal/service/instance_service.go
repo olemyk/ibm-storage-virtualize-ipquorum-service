@@ -364,13 +364,40 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, instanceID string,
 	s.log.Info("Deleting instance",
 		zap.String("name", instance.Name),
 		zap.String("id", instance.ID),
+		zap.String("server_id", instance.ServerID),
 		zap.Bool("force", force),
 	)
 
-	// Stop instance first if running
-	if instance.Status == "running" && !force {
+	// If force=true, skip agent/script operations and just delete from database
+	if force {
+		s.log.Warn("Force deleting instance - skipping agent/script cleanup",
+			zap.String("name", instance.Name),
+			zap.String("id", instance.ID),
+			zap.String("server_id", instance.ServerID),
+		)
+
+		// Delete from database only
+		if err := s.db.DeleteInstance(instanceID); err != nil {
+			s.log.Error("Failed to delete instance from database",
+				zap.String("name", instance.Name),
+				zap.Error(err),
+			)
+			return fmt.Errorf("failed to delete from database: %w", err)
+		}
+
+		s.log.Info("Instance force deleted successfully (database only)",
+			zap.String("name", instance.Name),
+		)
+		return nil
+	}
+
+	// Normal deletion: stop instance first if running
+	if instance.Status == "running" {
 		if err := s.StopInstance(ctx, instanceID); err != nil {
-			return fmt.Errorf("failed to stop instance before deletion: %w", err)
+			s.log.Warn("Failed to stop instance before deletion, continuing anyway",
+				zap.String("name", instance.Name),
+				zap.Error(err),
+			)
 		}
 	}
 
@@ -379,11 +406,26 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, instanceID string,
 		// Remote instance: use agent API
 		agentClient, err := s.agentRegistry.Get(instance.ServerID)
 		if err != nil {
-			s.log.Error("Failed to get agent client",
+			// Agent not found - this is an orphaned instance
+			s.log.Warn("Agent not found for instance, removing orphaned record",
+				zap.String("instance_id", instanceID),
+				zap.String("instance_name", instance.Name),
 				zap.String("server_id", instance.ServerID),
-				zap.Error(err),
+				zap.Error(err))
+
+			// Delete orphaned instance record from database
+			if err := s.db.DeleteInstance(instanceID); err != nil {
+				s.log.Error("Failed to delete orphaned instance from database",
+					zap.String("name", instance.Name),
+					zap.Error(err),
+				)
+				return fmt.Errorf("failed to delete orphaned instance from database: %w", err)
+			}
+
+			s.log.Info("Orphaned instance record removed successfully",
+				zap.String("name", instance.Name),
 			)
-			return fmt.Errorf("failed to get agent client: %w", err)
+			return nil
 		}
 
 		s.log.Info("Deleting remote instance via agent",
@@ -401,7 +443,7 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, instanceID string,
 		}
 	} else {
 		// Local instance: execute bash script
-		result := s.executor.DeleteInstance(ctx, instance.Name, force)
+		result := s.executor.DeleteInstance(ctx, instance.Name, false)
 		if result.Error != nil || result.ExitCode != 0 {
 			s.log.Error("Failed to delete instance via script",
 				zap.String("name", instance.Name),

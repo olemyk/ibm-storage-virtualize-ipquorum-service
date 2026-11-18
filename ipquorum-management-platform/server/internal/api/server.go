@@ -22,17 +22,18 @@ import (
 
 // Server represents the API server
 type Server struct {
-	config          *config.Config
-	db              *storage.Database
-	log             *zap.Logger
-	jwtManager      *auth.JWTManager
-	router          *gin.Engine
-	executor        *executor.Executor
-	instanceService *service.InstanceService
-	healthChecker   *health.HealthChecker
-	metrics         *metrics.Metrics
-	agentRegistry   *agent.Registry
-	startTime       time.Time
+	config           *config.Config
+	db               *storage.Database
+	log              *zap.Logger
+	jwtManager       *auth.JWTManager
+	router           *gin.Engine
+	executor         *executor.Executor
+	instanceService  *service.InstanceService
+	containerService *service.ContainerService
+	healthChecker    *health.HealthChecker
+	metrics          *metrics.Metrics
+	agentRegistry    *agent.Registry
+	startTime        time.Time
 }
 
 // NewServer creates a new API server
@@ -57,28 +58,36 @@ func NewServer(cfg *config.Config, db *storage.Database, log *zap.Logger, script
 	// Create instance service (with agent registry for remote execution)
 	instanceService := service.NewInstanceService(db, exec, agentRegistry, log)
 
-	// Create health checker (with agent registry for remote health checks)
+	// Create container service (with agent registry for container operations)
+	containerService := service.NewContainerService(db.DB(), agentRegistry, log)
+
+	// Create health checker (with agent registry for remote health checks and container service for container health checks)
 	healthCheckInterval := 30 * time.Second
 	if cfg.Server.HealthCheckInterval > 0 {
 		healthCheckInterval = time.Duration(cfg.Server.HealthCheckInterval) * time.Second
 	}
-	healthChecker := health.NewHealthChecker(db, exec, agentRegistry, log, healthCheckInterval)
+	healthChecker := health.NewHealthChecker(db, exec, agentRegistry, containerService, log, healthCheckInterval)
 
 	// Create metrics
 	metricsCollector := metrics.New("ipquorum")
 
+	// Create router with HEAD request handling
+	router := gin.New()
+	router.HandleMethodNotAllowed = true
+
 	server := &Server{
-		config:          cfg,
-		db:              db,
-		log:             log,
-		jwtManager:      jwtManager,
-		router:          gin.New(),
-		executor:        exec,
-		instanceService: instanceService,
-		healthChecker:   healthChecker,
-		metrics:         metricsCollector,
-		agentRegistry:   agentRegistry,
-		startTime:       time.Now(),
+		config:           cfg,
+		db:               db,
+		log:              log,
+		jwtManager:       jwtManager,
+		router:           router,
+		executor:         exec,
+		instanceService:  instanceService,
+		containerService: containerService,
+		healthChecker:    healthChecker,
+		metrics:          metricsCollector,
+		agentRegistry:    agentRegistry,
+		startTime:        time.Now(),
 	}
 
 	server.setupMiddleware()
@@ -126,8 +135,9 @@ func (s *Server) setupMiddleware() {
 
 // setupRoutes sets up all API routes
 func (s *Server) setupRoutes() {
-	// Health check (no auth required)
+	// Health check (no auth required) - support both GET and HEAD
 	s.router.GET("/health", s.handleHealth)
+	s.router.HEAD("/health", s.handleHealth)
 
 	// Metrics endpoint (no auth required)
 	s.router.GET("/metrics", gin.WrapH(promhttp.Handler()))
@@ -135,8 +145,9 @@ func (s *Server) setupRoutes() {
 	// API v1 routes
 	v1 := s.router.Group("/api/v1")
 	{
-		// System health check (no auth required)
+		// System health check (no auth required) - support both GET and HEAD
 		v1.GET("/health", s.handleHealth)
+		v1.HEAD("/health", s.handleHealth)
 
 		// Authentication routes (no auth required)
 		authRoutes := v1.Group("/auth")
@@ -197,9 +208,21 @@ func (s *Server) setupRoutes() {
 				servers.GET("", s.handleListServers)
 				servers.POST("", s.handleRegisterServer)
 				servers.GET("/:id", s.handleGetServer)
-				servers.DELETE("/:id", s.handleUnregisterServer)
-				servers.GET("/:id/instances", s.handleGetServerInstances)
+				servers.PUT("/:id", s.handleUpdateServer)
+				servers.DELETE("/:id", s.handleDeleteServer)
+				servers.POST("/:id/test", s.handleTestServer)
+				servers.GET("/:id/status", s.handleGetServerStatus)
+				servers.GET("/:id/containers/:container_id/logs", s.handleGetContainerLogs)
 			}
+
+			// Container routes (for container-based deployments)
+			containerHandlers := NewContainerHandlers(s.containerService, s.log)
+			containerHandlers.RegisterRoutes(protected)
+
+			// IPQuorum container routes (for IPQuorum-specific containers)
+			ipquorumService := service.NewIPQuorumService(s.db, s.containerService)
+			ipquorumHandler := NewIPQuorumHandler(ipquorumService, s.log)
+			ipquorumHandler.RegisterRoutes(protected)
 
 			// Configuration routes
 			configRoutes := protected.Group("/config")
@@ -660,12 +683,14 @@ func (s *Server) handleGetInstanceLogs(c *gin.Context) {
 
 	// Get logs based on server_id
 	var result *executor.ExecuteResult
-	if instance.ServerID == "local" {
+	if instance.ServerID == "local" || instance.ServerID == "" {
 		// Local execution
 		result = s.executor.GetLogs(c.Request.Context(), instance.Name, lines)
 	} else {
-		// Remote execution via agent
-		result = s.executor.GetLogsRemote(c.Request.Context(), instance.ServerID, instance.Name, lines)
+		// Remote execution via agent - use container name format
+		// Container name format: ipquorum-{first 8 chars of instance ID}
+		containerName := fmt.Sprintf("ipquorum-%s", instance.ID[:8])
+		result = s.executor.GetLogsRemote(c.Request.Context(), instance.ServerID, containerName, lines)
 	}
 
 	if result.Error != nil {
